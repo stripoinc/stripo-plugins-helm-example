@@ -1,0 +1,5 @@
+test.yaml
+secrets/docker-hub-secret.yaml
+secrets/*
+
+minikube/index-minikube.html

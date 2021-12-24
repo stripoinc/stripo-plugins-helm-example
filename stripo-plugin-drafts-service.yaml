@@ -1,0 +1,71 @@
+# Default values for stripo-plugin-drafts-service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+DeadlineSeconds: 260
+
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: 
+  - name: dockerhub
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  limits:
+    memory: 628Mi
+  requests:
+    memory: 628Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env: 
+  - name: APPNAME
+    value: stripo-plugin-drafts-service
+  - name: ENV
+    value: PLUGINS
+  - name: PROFILE
+    value: PLUGINS
+  - name: SPRING_CONFIG_NAME
+    value: application,jdbc,log,base
+  - name: SPRING_CONFIG_LOCATION
+    value: file:///config/
+  - name: JVM_MEMORY_OPTS
+    value: -Xss256k -Xms256m -Xmx400m -XX:PermSize=128M -XX:MaxPermSize=128M -XX:ReservedCodeCacheSize=128M -Dspring.cloud.config.enabled=false   
+  - name: LOGSTASH_HOST
+    value: logstash
+  - name: LOGSTASH_PORT
+    value: "5008"
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_drafts
+      spring.datasource.username=example
+      spring.datasource.password=secret
+      plugin.service.patch-url=http://patches-service:8080
+      draft.autoSave.maxRetries=3
+      draft.autoSave.timeoutSeconds=30

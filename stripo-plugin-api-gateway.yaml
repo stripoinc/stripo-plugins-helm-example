@@ -1,0 +1,82 @@
+# Default values for stripo-plugin-api-gateway.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: 
+  - name: dockerhub
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  limits:
+    memory: 612Mi
+  requests:
+    memory: 612Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env: 
+  - name: APPNAME
+    value: stripo-plugin-api-gateway
+  - name: ENV
+    value: PLUGINS
+  - name: PROFILE
+    value: PLUGINS
+  - name: SPRING_CONFIG_NAME
+    value: application,jdbc,log,base
+  - name: SPRING_CONFIG_LOCATION
+    value: file:///config/
+  - name: JVM_MEMORY_OPTS
+    value: -Xss256k -Xms256m -Xmx400m -XX:PermSize=128M -XX:MaxPermSize=128M -XX:ReservedCodeCacheSize=128M -Dspring.cloud.config.enabled=false
+  - name: LOGSTASH_HOST
+    value: logstash
+  - name: LOGSTASH_PORT
+    value: "5008"
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      service.plugindetails.url=http://stripo-plugin-details-service:8080
+      service.customblocks.url=http://stripo-plugin-custom-blocks-service:8080
+      service.drafts.url=http://stripo-plugin-drafts-service:8080
+      service.documents.url=http://stripo-plugin-documents-service:8080
+      service.imagesbank.url=http://stripo-plugin-image-bank-service:8080
+      service.htmlgen.url=http://stripe-html-gen-service:8080
+      service.htmlcleaner.url=http://stripe-html-cleaner-service:8080
+      service.statistics.url=http://stripo-plugin-statistics-service:8080
+      service.timer.url=http://stripo-timer-api:8080
+      service.timer.username=Admin
+      service.timer.password=secret
+      jwt.secret.cabinetKey=secret
+      jwt.secret.apiKey=secret
+      auth.innerServiceUsername=innerPluginApiUsername
+      auth.innerServicePassword=secret
+      #=================== Updated passwords ======================
+      jwt.secret.apiKeyV2=secret
+      jwt.secret.cabinetKeyV2=secret
+      jwt.secret.expirationInMinutes=30
