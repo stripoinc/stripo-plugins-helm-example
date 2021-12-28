@@ -16,7 +16,7 @@ CREATE DATABASE stripo_plugin_local_securitydb;
 ```
 
 ### Create s3 bucket
-https://support.stripo.email/en/articles/3726140-configuration-of-aws-s3-storage
+https://stripo.email/ru/plugin-api/#configuration-of-aws-s3-storage
 
 ### Change application.properties postgres connections in yaml file. 
 File need to change:

@@ -33,8 +33,6 @@ if [[ "$STATUS" == "" ]] ; then
     minikube start
 fi
 
-minikube addons enable ingress
-
 echo "Check if namespace exist"
 kubectl get namespace $NAMESPACE
 if [[ "$?" -ne 0 ]] ; then

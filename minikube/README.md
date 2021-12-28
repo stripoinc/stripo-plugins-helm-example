@@ -3,6 +3,8 @@
 kubectl  (https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 helm     (https://helm.sh/docs/intro/install/)
 minikube (https://minikube.sigs.k8s.io/docs/start/)
+
+NOTE! For mac users. Docker daemon should be runned
 ```
 
 ### Create database on postgresql
@@ -17,7 +19,7 @@ CREATE DATABASE stripo_plugin_local_securitydb;
 ```
 
 ### Create s3 bucket
-https://support.stripo.email/en/articles/3726140-configuration-of-aws-s3-storage
+https://stripo.email/ru/plugin-api/#configuration-of-aws-s3-storage
 
 ### Change application.properties postgres connections in yaml file. 
 File need to change:
@@ -77,6 +79,18 @@ helm repo update
 mkdir -p secrets
 # add file to secrets docker-hub-secret.yaml
 ./minikube/install_on_minikube.sh
+```
+
+NOTE. If in the console you see the message
+```
+Because you are using a Docker driver on darwin, the terminal needs to be open to run it.
+```
+
+press Ctrl+C and run the command
+```
+minikube service emple-loadbalancer -n stripo --url
+SERVICE_ADDRESS_LB=http://127.0.0.1:56528 //set your URL value
+sed "s|{SERVICE_ADDRESS}|$SERVICE_ADDRESS_LB|g" minikube/index-minikube.tmpl > minikube/index-minikube.html
 ```
 
 #### On database stripo_plugin_local_plugin_details
