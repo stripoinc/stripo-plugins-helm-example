@@ -7,7 +7,7 @@ NAMESPACE=stripo
 function check_result {
   if [[ "$?" -ne 0 ]] ; then
           echo "========================================"
-          echo "-=========== Install faild ============-"
+          echo "-=========== Install failed ============-"
           echo "========================================"
           exit 1
   fi
@@ -29,8 +29,8 @@ function install_or_skip {
 
 STATUS=`minikube status | grep 'host: Running'`
 
-if [[ "$STATUS" == "" ]] ; then 
-    minikube start
+if [[ "$STATUS" == "" ]] ; then
+    minikube start --vm-driver=docker
 fi
 
 echo "Check if namespace exist"

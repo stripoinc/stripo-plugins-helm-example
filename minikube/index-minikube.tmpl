@@ -112,7 +112,7 @@
                         }
                     },
                     apiBaseUrl: '{SERVICE_ADDRESS}/stripo-plugin-api-gateway/api/v1',
-                    proxyUrl: '{SERVICE_ADDRESS}/stripo-plugin-proxy-service',
+                    proxyUrl: '{SERVICE_ADDRESS}/stripo-plugin-proxy-service/v1/proxy',
                     getAuthToken: function (callback) {
                         request('POST', '{SERVICE_ADDRESS}/stripo-plugin-api-gateway/api/v1/auth',
                             JSON.stringify({

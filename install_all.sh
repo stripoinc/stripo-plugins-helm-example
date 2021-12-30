@@ -6,7 +6,7 @@ NAMESPACE=stripo
 function check_result {
   if [[ "$?" -ne 0 ]] ; then
           echo "========================================"
-          echo "-=========== Install faild ============-"
+          echo "-=========== Install failed ============-"
           echo "========================================"
           exit 1
   fi

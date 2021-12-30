@@ -64,15 +64,12 @@ configmap:
       storage.internal.aws.baseDownloadUrl=
 ```
 
-### How to add private repo
+### How to add helm repo
 ```
-helm repo add --username GitHubUser --password githubToken stripo 'https://raw.githubusercontent.com/stripoinc/stripo-plugins-charts/main/'
-```
-
-### Update repo
-```
+helm repo add stripo 'https://raw.githubusercontent.com/stripoinc/stripo-plugins-charts/main/'
 helm repo update
 ```
+
 
 ## Install all plugins
 ```

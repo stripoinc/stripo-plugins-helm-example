@@ -18,8 +18,8 @@ CREATE DATABASE stripo_plugin_local_securitydb;
 ### Create s3 bucket
 https://stripo.email/ru/plugin-api/#configuration-of-aws-s3-storage
 
-### Change application.properties postgres connections in yaml file. 
-File need to change:
+### Change application.properties postgres connections in yaml files. 
+Files to change:
 
 ```stripo-plugin-custom-blocks-service.yaml``` 
 
@@ -47,10 +47,7 @@ configmap:
       spring.datasource.username=YOU_POSTGRES_USERNAME
       spring.datasource.password=YOU_POSTGRES_PASSWORD
       auth.username=security-service
-      auth.password=secret
-      server.port=8080
-      #=================== Updated passwords ======================
-      auth.passwordV2=secret
+      auth.passwordV2=secret 
 ```
 ### Change aws credentials stripo-plugin-documents-service.yaml
 ``` yml
@@ -60,13 +57,53 @@ configmap:
       storage.internal.aws.region=
 ```
 
-### How to add private repo
+### Change images tags from latest to release versions
+Stripo continuously releases new features and bug fixes. 
+You will be regularly notified with the list of release image tags and release notes.
+You need to replace
 ```
-helm repo add --username GitHubUser --password githubToken stripo 'https://raw.githubusercontent.com/stripoinc/stripo-plugins-charts/main/'
+tag: "latest"
+```
+with the actual tag version in yaml files.
+Files to change:
+```amp-validator-service.yaml```
+```patches-service.yaml```
+```screenshot-service.yaml```
+```stripe-html-cleaner-service.yaml```
+```stripe-html-gen-service.yaml```
+```stripo-plugin-api-gateway.yaml```
+```stripo-plugin-custom-blocks-service.yaml```
+```stripo-plugin-details-service```
+```stripo-plugin-documents-service.yaml```
+```stripo-plugin-drafts-service.yaml```
+```stripo-plugin-image-bank-service.yaml```
+```stripo-plugin-proxy-service.yaml```
+```stripo-plugin-statistics-service.yaml ```
+```stripo-security-service.yaml ```
+```emple-loadbalancer.yaml```
+
+To apply the new tag version run the following command:
+```
+./update.sh amp-validator-service
+./update.sh patches-service
+./update.sh screenshot-service
+./update.sh stripe-html-cleaner-service
+./update.sh stripe-html-gen-service
+./update.sh stripo-plugin-api-gateway
+./update.sh stripo-plugin-custom-blocks-service
+./update.sh stripo-plugin-details-service
+./update.sh stripo-plugin-documents-service
+./update.sh stripo-plugin-drafts-service
+./update.sh stripo-plugin-image-bank-service
+./update.sh stripo-plugin-proxy-service
+./update.sh stripo-plugin-statistics-service
+./update.sh stripo-security-service
+./update.sh emple-loadbalancer
 ```
 
-### Update repo
+### How to add helm repo
 ```
+helm repo add stripo 'https://raw.githubusercontent.com/stripoinc/stripo-plugins-charts/main/'
 helm repo update
 ```
 
@@ -89,6 +126,25 @@ INSERT INTO plugins(name, plugin_id, secret_key, created_on, website, email, sta
 {{ emple-loadbalancer-ingress }}
 {{ S3_BUCKET_URI }}
 ```
+
+### Logging
+1. Deploy ELK stack
+2. Set env variables LOGSTASH_HOST and LOGSTASH_PORT in yaml files.
+   Files to change:
+```amp-validator-service.yaml```
+```patches-service.yaml```
+```screenshot-service.yaml```
+```stripe-html-cleaner-service.yaml```
+```stripe-html-gen-service.yaml```
+```stripo-plugin-api-gateway.yaml```
+```stripo-plugin-custom-blocks-service.yaml```
+```stripo-plugin-details-service```
+```stripo-plugin-documents-service.yaml```
+```stripo-plugin-drafts-service.yaml```
+```stripo-plugin-image-bank-service.yaml```
+```stripo-plugin-proxy-service.yaml```
+```stripo-plugin-statistics-service.yaml ```
+```stripo-security-service.yaml ```
 
 ## Manual install
 ### Create namespace if not exist

@@ -1,66 +1,35 @@
-# Default values for stripo-plugin-custom-blocks-service.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 replicaCount: 1
 
 image:
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
+  # Overrides the image tag with the latest release tag value
   tag: "latest"
 
 imagePullSecrets: 
   - name: dockerhub
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: false
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-podAnnotations: {}
-
-podSecurityContext: {}
-  # fsGroup: 2000
-
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
 service:
   type: ClusterIP
   port: 8080
 
 resources:
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   limits:
-    memory: 628Mi
+    memory: 768Mi
   requests:
-    memory: 628Mi
+    memory: 768Mi
 
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetCPUUtilizationPercentage: 90
+  targetMemoryUtilizationPercentage: 90
 
 nodeSelector: {}
 
 tolerations: []
 
 affinity: {}
-
 
 env: 
   - name: APPNAME
@@ -74,7 +43,7 @@ env:
   - name: SPRING_CONFIG_LOCATION
     value: file:///config/
   - name: JVM_MEMORY_OPTS
-    value: -Xss256k -Xms256m -Xmx400m -XX:PermSize=128M -XX:MaxPermSize=128M -XX:ReservedCodeCacheSize=128M -Dspring.cloud.config.enabled=false
+    value: -Xss256k -Xms256m -Xmx400m -XX:PermSize=128M -XX:MaxPermSize=128M -XX:ReservedCodeCacheSize=128M -Dspring.cloud.config.enabled=false -Daws.secretsmanager.enabled=false
   - name: LOGSTASH_HOST
     value: logstash
   - name: LOGSTASH_PORT
