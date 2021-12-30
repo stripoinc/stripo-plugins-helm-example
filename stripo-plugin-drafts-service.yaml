@@ -59,5 +59,3 @@ configmap:
       spring.datasource.username=example
       spring.datasource.password=secret
       plugin.service.patch-url=http://patches-service:8080
-      draft.autoSave.maxRetries=3
-      draft.autoSave.timeoutSeconds=30
