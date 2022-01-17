@@ -24,7 +24,7 @@ function update {
     check_result
     echo -ne '###                       (10%)\r'
     CHECK_INSTALL=`helm list --namespace=$NAMESPACE | grep $service_name`
-    helm upgrade $service_name stripo/$service_name -f $service_name.yaml --namespace $NAMESPACE
+    helm upgrade --install $service_name stripo/$service_name -f $service_name.yaml --namespace $NAMESPACE
     check_result
     echo -ne '#############             (57%)\r'
     kubectl rollout status deploy/$service_name --namespace=$NAMESPACE
