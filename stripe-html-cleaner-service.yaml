@@ -61,3 +61,5 @@ configmap:
       amp.validator.password=secret
       amp.validator.active=true
       use.security.policy.for.amp=false
+      auth.swaggerUsername=stripe-swagger-user
+      auth.swaggerPassword=secret
