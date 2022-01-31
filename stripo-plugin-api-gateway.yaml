@@ -64,3 +64,4 @@ configmap:
       service.timer.url=http://stripo-timer-api:8080
       service.timer.username=Admin
       service.timer.password=secret
+      jwt.secret.apiKeyV2=secret
