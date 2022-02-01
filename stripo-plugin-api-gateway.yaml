@@ -65,3 +65,4 @@ configmap:
       service.timer.username=Admin
       service.timer.password=secret
       jwt.secret.apiKeyV2=secret
+      jwt.secret.expirationInMinutes=30
