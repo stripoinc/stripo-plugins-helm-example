@@ -71,38 +71,15 @@ configmap:
           timeout client 800000
           timeout server 800000
           default-server init-addr last,libc,none
-          frontend services
-          bind *:80
           option http-server-close
+      frontend services
+          mode http
+          bind *:80
+          default_backend stripo-plugin-api-gateway-be
           acl url_stripo-plugin-api-gateway path_beg /stripo-plugin-api-gateway
           use_backend stripo-plugin-api-gateway-be if url_stripo-plugin-api-gateway
-          acl url_stripo-plugin-details-service path_beg /stripo-plugin-details-service
-          use_backend stripo-plugin-details-service-be if url_stripo-plugin-details-service
-          acl url_stripo-plugin-custom-blocks-service path_beg /stripo-plugin-custom-blocks-service
-          use_backend stripo-plugin-custom-blocks-service-be if url_stripo-plugin-custom-blocks-service
-          acl url_stripo-plugin-documents-service path_beg /stripo-plugin-documents-service
-          use_backend stripo-plugin-documents-service-be if url_stripo-plugin-documents-service
-          acl url_stripo-plugin-drafts-service path_beg /stripo-plugin-drafts-service
-          use_backend stripo-plugin-drafts-service-be if url_stripo-plugin-drafts-service
-          acl url_stripo-plugin-image-bank-service path_beg /stripo-plugin-image-bank-service
-          use_backend stripo-plugin-image-bank-service-be if url_stripo-plugin-image-bank-service
-          acl url_stripe-html-gen-service path_beg /stripe-html-gen-service
-          use_backend stripe-html-gen-service-be if url_stripe-html-gen-service
-          #cabinet stripe-ui
-          acl url_screenshot-service path_beg /screenshot-service
-          use_backend screenshot-service-be if url_screenshot-service
-          acl url_patches-service path_beg /patches-service
-          use_backend patches-service-be if url_patches-service
-          acl url_stripe-html-cleaner-service path_beg  /stripe-html-cleaner-service
-          use_backend stripe-html-cleaner-service-be1 if url_stripe-html-cleaner-service
           acl url_stripo-plugin-proxy-service path_beg /stripo-plugin-proxy-service
           use_backend stripo-plugin-proxy-service-be if url_stripo-plugin-proxy-service
-          acl url_ampvalidator path_beg /ampvalidator
-          use_backend ampvalidator-be if url_ampvalidator
-          acl url_timerapi path_beg /timerapi
-          use_backend timerapi-be if url_timerapi
-          acl url_stripo-security-service path_beg /securityservice
-          use_backend stripo-security-service-be if url_stripo-security-service
           acl url_emple-ui path_beg /static
           use_backend emple-ui-be if url_emple-ui
       backend stripo-plugin-api-gateway-be
@@ -111,90 +88,12 @@ configmap:
           option forwardfor
           reqrep ^([^\ ]*)\ /stripo-plugin-api-gateway/(.*)     \1\ /\2
           server site stripo-plugin-api-gateway:8080  check inter 9000
-      backend stripo-plugin-details-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /stripo-plugin-details-service(.*)     \1\ /\2
-          server site stripo-plugin-details-service:8080  check inter 5000
-      backend stripo-plugin-custom-blocks-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /stripo-plugin-custom-blocks-service(.*)     \1\ /\2
-          server site stripo-plugin-custom-blocks-service:8080  check inter 5000
-      backend stripo-plugin-documents-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /stripo-plugin-documents-service(.*)     \1\ /\2
-          server site stripo-plugin-documents-service:8080  check inter 5000 backup
-      backend stripo-plugin-drafts-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /stripo-plugin-drafts-service(.*)     \1\ /\2
-          server site stripo-plugin-drafts-service:8080  check inter 5000 backup
-      backend stripo-plugin-image-bank-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /stripo-plugin-image-bank-service(.*)     \1\ /\2
-          server site stripo-plugin-image-bank-service:8080  check inter 5000 backup
-      backend stripe-html-gen-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /stripe-html-gen-service(.*)     \1\ /\2
-          server site stripe-html-gen-service:8080  check inter 5000 backup
-      backend screenshot-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /screenshot-service/(.*)     \1\ /\2
-          server site screenshot-service:8080  check inter 5000 backup
-      backend patches-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /patches-service/(.*)     \1\ /\2
-          server site patches-service:8080  check inter 5000 backup
-      backend stripe-html-cleaner-service-be1
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /stripe-html-cleaner-service/(.*)     \1\ /\2
-          server site stripe-html-cleaner-service:8080  check inter 5000 backup
       backend stripo-plugin-proxy-service-be
           balance source
           option httpclose
           option forwardfor
           reqrep ^([^\ ]*)\ /stripo-plugin-proxy-service/(.*)     \1\ /\2
           server site stripo-plugin-proxy-service:8080  check inter 5000 backup
-      backend timerapi-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /timerapi/(.*)     \1\ /\2
-          server site stripo-timer-api:8080  check inter 5000 backup
-      backend ampvalidator-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /ampvalidator/(.*)     \1\ /\2
-          server site amp-validator-service:8080  check inter 5000 backup
-      backend stripe-html-cleaner-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /htmlcleaner/(.*)     \1\ /\2
-          server site stripe-html-cleaner-service:8080  check inter 5000 backup
-      backend stripo-security-service-be
-          balance source
-          option httpclose
-          option forwardfor
-          reqrep ^([^\ ]*)\ /securityservice/(.*)     \1\ /\2
-          server site stripo-security-service:8080  check inter 5000 backup
       backend emple-ui-be
           balance source
           option httpclose
