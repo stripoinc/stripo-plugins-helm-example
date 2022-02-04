@@ -255,7 +255,7 @@ helm install emple-loadbalancer stripo/emple-loadbalancer -f emple-loadbalancer.
 ### Inner timers service credentials. Change instruction.
 In countdowntimer database insert row in table system_user with ${username} and ${password}
 Password must be encoded in this table.
-Here is python script to encode password
+Here is python script `encode.py` to encode password
 ```
 import sys
 import bcrypt
