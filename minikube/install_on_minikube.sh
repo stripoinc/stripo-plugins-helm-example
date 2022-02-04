@@ -89,11 +89,17 @@ check_result
 echo -ne '#######################    (91%)\r'
 install_or_skip "stripo-plugin-details-service"
 check_result
-echo -ne '########################   (95%)\r'
+echo -ne '########################   (92%)\r'
 install_or_skip "stripo-plugin-drafts-service"
 check_result
-echo -ne '########################## (99%)\r'
+echo -ne '########################## (94%)\r'
 install_or_skip "emple-loadbalancer"
+check_result
+echo -ne '########################## (97%)\r'
+install_or_skip "countdowntimer"
+check_result
+echo -ne '########################## (99%)\r'
+install_or_skip "stripo-timer-api"
 check_result
 echo -ne '###########################(100%)\r'
 echo "========================================"
