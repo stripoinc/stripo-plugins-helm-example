@@ -127,7 +127,116 @@ INSERT INTO plugins(name, plugin_id, secret_key, created_on, website, email, sta
 {{ S3_BUCKET_URI }}
 ```
 
-## Timer block
+## Timer block support
+
+* Create databases for countdowntimer and stripo-timer-api
+
+``` sql
+create database countdowntimer;
+create database stripo_plugin_local_timers;
+```
+* Change config in `countdowntimer.yaml`
+
+   * `DB_HOST` change to your postgresql host address
+
+   * `DB_USER` postgresql user
+
+   * `DB_PASSWORD` postgresql password
+
+```
+env: 
+  - name: APPNAME
+    value: countdowntimer
+  - name: ENV
+    value: PLUGINS
+  - name: PROFILE
+    value: PLUGINS
+  - name: PLUGIN_PATCHES
+    value: "true"
+  - name: DB_HOST
+    value: postgres
+  - name: DB_PORT
+    value: "5432"
+  - name: DB_NAME
+    value: countdowntimer
+  - name: DB_USER
+    value: example
+  - name: DB_PASSWORD
+    value: secret
+```
+
+Enable ingress controller in `countdowntimer.yaml`
+
+Example nginx ingress controller:
+``` yaml
+ingress:
+  enabled: true
+  annotations: 
+    kubernetes.io/ingress.class: "nginx"
+  hosts:
+    - host: countdowntimer.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+```
+
+Change the `HOST` parameter in the `countdowntimer.yaml` file to your domain that you specified in the ingress controller.
+``` yaml
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    config.yaml: |
+      HOST: countdowntimer.example.com      # need change to your domain
+      SECRET_KEY: secret
+      FONT_UPLOAD_FOLDER: '/usr/local/countdowntimer/fonts'
+      GIF_FOLDER: '/opt/sources'
+      PROD: true
+      GIF_URL: '/api-files/'
+      UPLOAD_URL: '/api-uploads/'
+      CACHE_LIFETIME: 30
+      UPLOAD_FOLDER: '/opt/uploads'
+```
+
+* Change configmap in `stripo-timer-api.yaml`
+
+   * `spring.datasource.url=` jdbc:postgresql://`change to your postgresql server address`:5432/stripo_plugin_local_timers
+   * `spring.datasource.username=` change to your postgresql user
+   * `spring.datasource.password=`change to your postgresql password
+
+``` yaml
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_timers
+      spring.datasource.username=example
+      spring.datasource.password=secret
+      spring.security.user.name=timeradmin
+      spring.security.user.password=secret
+      spring.security.user.passwordV2=secret
+      timer.url=http://countdowntimer:80/api/
+      timer.username=Admin
+      timer.password=Qkt6ve7R
+      timer.checkLimit=false
+      auth.enableJwtAuth=false
+      auth.innerServiceUsername=innerTimerApiUsername
+      auth.innerServicePassword=test
+      spring.security.user.name=admin
+      spring.security.user.password=test
+      spring.security.user.roles=USER
+      auth.innerServiceUsername=innerTimerApiUsername
+      auth.innerServicePassword=test
+```
+
+
+* Execute commands to install helm chart
+
+``` sh
+helm repo update stripo
+helm upgrade --install countdowntimer stripo/countdowntimer -f countdowntimer.yaml --namespace stripo
+helm upgrade --install stripo-timer-api stripo/stripo-timer-api -f stripo-timer-api.yaml --namespace stripo
+```
+
 ### Credentials generation for communication between timer-api-service and countdowntimer.
 1. Set ${username} and ${password} values in the stripo-timer-api.yaml
 ```
@@ -274,136 +383,4 @@ helm install emple-ui stripo/emple-ui -f emple-ui.yaml --namespace stripo
 ### Install emple-loadbalancer
 ```
 helm install emple-loadbalancer stripo/emple-loadbalancer -f emple-loadbalancer.yaml --namespace stripo
-```
-### Inner timers service credentials. Change instruction.
-In countdowntimer database insert row in table system_user with ${username} and ${password}
-Password must be encoded in this table.
-Here is python script `encode.py` to encode password
-```
-import sys
-import bcrypt
-
-password = sys.argv[1]
-password = password.encode()
-print(bcrypt.hashpw(password, bcrypt.gensalt()).decode())
-```
-usage example
-```
-user@user:~python3.8 encode.py secret
-$2b$12$3hmRgWXg85L3YN37mqgyGOkzscWZ0FXJLjAXb1SQVDZvQgC3xuAC6
-```
-This ${username} and ${password} correspond to application properties in stripo-timer-api service
-```
-      timer.username=${username}
-      timer.password=${password} // not encoded
-```
-
-### Install stripo plugin services
-
- * Create database for countdowntimer and stripo-timer-api
-
-``` sql
-create database countdowntimer;
-create database stripo_plugin_local_timers;
-```
- * Change config in `countdowntimer.yaml`
-
-   * `DB_HOST` change to your postgresql host address
-
-   * `DB_USER` postgresql user
-
-   * `DB_PASSWORD` postgresql password
-
-```
-env: 
-  - name: APPNAME
-    value: countdowntimer
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
-  - name: PLUGIN_PATCHES
-    value: "true"
-  - name: DB_HOST
-    value: postgres
-  - name: DB_PORT
-    value: "5432"
-  - name: DB_NAME
-    value: countdowntimer
-  - name: DB_USER
-    value: example
-  - name: DB_PASSWORD
-    value: secret
-```
-
-Enable ingress controller in `countdowntimer.yaml`
-
-Example nginx ingress controller:
-``` yaml
-ingress:
-  enabled: true
-  annotations: 
-    kubernetes.io/ingress.class: "nginx"
-  hosts:
-    - host: countdowntimer.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-```
-
-Change the `HOST` parameter in the `countdowntimer.yaml` file to your domain that you specified in the ingress controller.
-``` yaml
-configmap:
-  enabled: true
-  extraScrapeConfigs:
-    config.yaml: |
-      HOST: countdowntimer.example.com      # need change to your domain
-      SECRET_KEY: secret
-      FONT_UPLOAD_FOLDER: '/usr/local/countdowntimer/fonts'
-      GIF_FOLDER: '/opt/sources'
-      PROD: true
-      GIF_URL: '/api-files/'
-      UPLOAD_URL: '/api-uploads/'
-      CACHE_LIFETIME: 30
-      UPLOAD_FOLDER: '/opt/uploads'
-```
-
-* Change configmap in `stripo-timer-api.yaml`
-
-  * `spring.datasource.url=` jdbc:postgresql://`change to your postgresql server address`:5432/stripo_plugin_local_timers 
-  * `spring.datasource.username=` change to your postgresql user
-  * `spring.datasource.password=`change to your postgresql password
-
-``` yaml
-configmap:
-  enabled: true
-  extraScrapeConfigs:
-    application.properties: |
-      spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_timers
-      spring.datasource.username=example
-      spring.datasource.password=secret
-      spring.security.user.name=timeradmin
-      spring.security.user.password=secret
-      spring.security.user.passwordV2=secret
-      timer.url=http://countdowntimer:80/api/
-      timer.username=Admin
-      timer.password=Qkt6ve7R
-      timer.checkLimit=false
-      auth.enableJwtAuth=false
-      auth.innerServiceUsername=innerTimerApiUsername
-      auth.innerServicePassword=test
-      spring.security.user.name=admin
-      spring.security.user.password=test
-      spring.security.user.roles=USER
-      auth.innerServiceUsername=innerTimerApiUsername
-      auth.innerServicePassword=test
-```
-
-
-* Execute commands to install helm chart
-
-``` sh
-helm repo update stripo
-helm upgrade --install countdowntimer stripo/countdowntimer -f countdowntimer.yaml --namespace stripo
-helm upgrade --install stripo-timer-api stripo/stripo-timer-api -f stripo-timer-api.yaml --namespace stripo
 ```
