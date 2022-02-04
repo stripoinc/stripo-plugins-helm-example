@@ -252,3 +252,25 @@ helm install emple-ui stripo/emple-ui -f emple-ui.yaml --namespace stripo
 ```
 helm install emple-loadbalancer stripo/emple-loadbalancer -f emple-loadbalancer.yaml --namespace stripo
 ```
+### Inner timers service credentials. Change instruction.
+In countdowntimer database insert row in table system_user with ${username} and ${password}
+Password must be encoded in this table.
+Here is python script to encode password
+```
+import sys
+import bcrypt
+
+password = sys.argv[1]
+password = password.encode()
+print(bcrypt.hashpw(password, bcrypt.gensalt()).decode())
+```
+usage example
+```
+user@user:~python3.8 encode.py secret
+$2b$12$3hmRgWXg85L3YN37mqgyGOkzscWZ0FXJLjAXb1SQVDZvQgC3xuAC6
+```
+This ${username} and ${password} correspond to application properties in stripo-timer-api service
+```
+      timer.username=${username}
+      timer.password=${password} // not encoded
+```
