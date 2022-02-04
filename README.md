@@ -120,14 +120,37 @@ INSERT INTO plugins(name, plugin_id, secret_key, created_on, website, email, sta
     VALUES ('demoplugin', '7a4b7b4092e011eba8b30242ac130004', 'e55c869d9e2846879c2e8eba1bf1b41b', '2024-04-01 00:00:00+00', '', '', 'ACTIVE', '{"theme":{"type":"CUSTOM","params":{"primary-color":"#32cb4b","secondary-color":"#ffffff","border-radius-base":"17px","customFontLink":"","font-size":"14px","font-family":"-apple-system, BlinkMacSystemFont, \"Segoe UI\", Oxygen-Sans, Ubuntu, Cantarell, \"Helvetica Neue\", sans-serif","option-panel-background-color":"#f6f6f6","default-font-color":"#555555","panels-border-color":"#dddddd"},"removePluginBranding":true},"imageGallery":{"type":"PLUGIN","awsRegion":"ap-south-1","tabs":[{"label":{"en":"Email"},"key":"email_${emailId}"}],"maxFileSizeInKBytes":2048,"imagesBankEnabled":false,"imagesBankLabel":{"en":"Stock"},"pexelsEnabled":false,"pixabayEnabled":false,"iconFinderEnabled":false,"imageSearchEnabled":false,"iconSearchEnabled":false,"skipChunkedTransferEncoding":true},"blocksLibrary":{"enabled":true,"tabs":[{"viewOrder":0,"label":{"en":"Email"},"key":"email_${emailId}"}],"view":"FULL_WIDTH"},"baseBlocks":{"imageEnabled":true,"textEnabled":true,"buttonEnabled":true,"spacerEnabled":true,"videoEnabled":true,"socialNetEnabled":true,"bannerEnabled":true,"menuEnabled":true,"htmlEnabled":true,"timerEnabled":false,"ampCarouselEnabled":true,"ampAccordionEnabled":true,"ampFormControlsEnabled":true},"blockControls":{"blockVisibilityEnabled":true,"mobileIndentPluginEnabled":true,"mobileInversionEnabled":true,"mobileAlignmentEnabled":true,"stripePaddingEnabled":true,"containerBackgroundEnabled":true,"structureBackgroundImageEnabled":true,"containerBackgroundImageEnabled":true,"dynamicStructuresEnabled":true,"imageSrcLinkEnabled":true,"ampVisibilityEnabled":true,"smartBlocksEnabled":true,"imageEditorPluginEnabled":true,"synchronizableModulesEnabled":false,"rolloverEffectEnabled":true},"permissionsApi":{},"mergeTagsEnabled":true,"specialLinksEnabled":false,"customFontsEnabled":true,"ownControls":true,"autoSaveApi":{"enabled":false,"username":"username","password":"password"},"undoEnabled":true,"versionHistoryEnabled":true}', 'ENTERPRISE', '2021-04-01 00:00:00+00', '2024-04-01 00:00:00+00', null, 'cope')
 ```
 
-### Change nginx config replase ``` plugins.conf ```
+### Change nginx config replace ``` plugins.conf ```
 ``` conf
 {{ public_domain }}
 {{ emple-loadbalancer-ingress }}
 {{ S3_BUCKET_URI }}
 ```
 
-### Logging
+## Timer block
+### Credentials generation for communication between timer-api-service and countdowntimer.
+1. Set ${username} and ${password} values in the stripo-timer-api.yaml
+```
+      timer.username=${username}
+      timer.password=${password} // not encoded
+```
+2. Encode that ${password} value with this python script `encode.py`:
+```
+import sys
+import bcrypt
+
+password = sys.argv[1]
+password = password.encode()
+print(bcrypt.hashpw(password, bcrypt.gensalt()).decode())
+```
+Example:
+```
+user@user:~python3.8 encode.py secret
+$2b$12$3hmRgWXg85L3YN37mqgyGOkzscWZ0FXJLjAXb1SQVDZvQgC3xuAC6
+```
+3. Add a record to the countdowntimer database table 'system_user' with ${username} and ${encodedPassword} values
+
+## Logging
 1. Deploy ELK stack
 2. Set env variables LOGSTASH_HOST and LOGSTASH_PORT in yaml files.
    Files to change:
@@ -251,26 +274,4 @@ helm install emple-ui stripo/emple-ui -f emple-ui.yaml --namespace stripo
 ### Install emple-loadbalancer
 ```
 helm install emple-loadbalancer stripo/emple-loadbalancer -f emple-loadbalancer.yaml --namespace stripo
-```
-### Inner timers service credentials. Change instruction.
-In countdowntimer database insert row in table system_user with ${username} and ${password}
-Password must be encoded in this table.
-Here is python script `encode.py` to encode password
-```
-import sys
-import bcrypt
-
-password = sys.argv[1]
-password = password.encode()
-print(bcrypt.hashpw(password, bcrypt.gensalt()).decode())
-```
-usage example
-```
-user@user:~python3.8 encode.py secret
-$2b$12$3hmRgWXg85L3YN37mqgyGOkzscWZ0FXJLjAXb1SQVDZvQgC3xuAC6
-```
-This ${username} and ${password} correspond to application properties in stripo-timer-api service
-```
-      timer.username=${username}
-      timer.password=${password} // not encoded
 ```
