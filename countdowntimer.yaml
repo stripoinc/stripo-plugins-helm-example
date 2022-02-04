@@ -30,7 +30,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: chart-example.local
+    - host: countdowntimer.stripo
       paths:
         - path: /
           pathType: ImplementationSpecific
@@ -55,17 +55,24 @@ env:
     value: PLUGINS
   - name: PROFILE
     value: PLUGINS
+  - name: PLUGIN_PATCHES
+    value: "true"
+  - name: DB_HOST
+    value: postgres
+  - name: DB_PORT
+    value: "5432"
+  - name: DB_NAME
+    value: countdowntimer
+  - name: DB_USER
+    value: example
+  - name: DB_PASSWORD
+    value: secret
 
 configmap:
   enabled: true
   extraScrapeConfigs:
     config.yaml: |
       HOST: countdowntimer.stripo
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: countdowntimer
-      DB_USER: example
-      DB_PASSWORD: secret
       SECRET_KEY: secret
       FONT_UPLOAD_FOLDER: '/usr/local/countdowntimer/fonts'
       GIF_FOLDER: '/opt/sources'
