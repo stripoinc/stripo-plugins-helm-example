@@ -57,16 +57,6 @@ env:
     value: PLUGINS
   - name: PLUGIN_PATCHES
     value: "true"
-  - name: DB_HOST
-    value: postgres
-  - name: DB_PORT
-    value: "5432"
-  - name: DB_NAME
-    value: countdowntimer
-  - name: DB_USER
-    value: example
-  - name: DB_PASSWORD
-    value: secret
 
 configmap:
   enabled: true
@@ -81,6 +71,11 @@ configmap:
       UPLOAD_URL: '/api-uploads/'
       CACHE_LIFETIME: 30
       UPLOAD_FOLDER: '/opt/uploads'
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: countdowntimer
+      DB_USER: example
+      DB_PASSWORD: secret
 
 volume:
   enabled: true
