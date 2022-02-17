@@ -144,25 +144,24 @@ create database stripo_plugin_local_timers;
    * `DB_PASSWORD` postgresql password
 
 ```
-env: 
-  - name: APPNAME
-    value: countdowntimer
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
-  - name: PLUGIN_PATCHES
-    value: "true"
-  - name: DB_HOST
-    value: postgres
-  - name: DB_PORT
-    value: "5432"
-  - name: DB_NAME
-    value: countdowntimer
-  - name: DB_USER
-    value: example
-  - name: DB_PASSWORD
-    value: secret
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    config.yaml: |
+      HOST: countdowntimer.stripo
+      SECRET_KEY: secret
+      FONT_UPLOAD_FOLDER: '/usr/local/countdowntimer/fonts'
+      GIF_FOLDER: '/opt/sources'
+      PROD: true
+      GIF_URL: '/api-files/'
+      UPLOAD_URL: '/api-uploads/'
+      CACHE_LIFETIME: 30
+      UPLOAD_FOLDER: '/opt/uploads'
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: countdowntimer
+      DB_USER: example
+      DB_PASSWORD: secret
 ```
 
 Enable ingress controller in `countdowntimer.yaml`
