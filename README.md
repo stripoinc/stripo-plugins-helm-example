@@ -1,6 +1,6 @@
 ### Prerequisites
 ```
-To follow this instruction, you will need to install following before you start:
+To follow this instruction, you will need to install before you start:
    - AWS EKS (Elastic Kubernetes Service)
    - PostgreSQL Database
 ```
@@ -140,10 +140,10 @@ INSERT INTO plugins(name, plugin_id, secret_key, created_on, website, email, sta
 {{ S3_BUCKET_URI }}
 ```
 
-### If you want to have access outside - you have to use nginx(example: plugins-external.conf) + ingress(install according to the https://kubernetes.github.io/ingress-nginx/deploy/#aws)  and make change in file emple-loadbalancer.yaml
-```
- className: "nginx-internal"
-```
+### If you want to have access outside 
+ ``` You have to use nginx(example: plugins-external.conf) + ingress(install according to the https://kubernetes.github.io/ingress-nginx/deploy/#aws)  and make change in file emple-loadbalancer.yaml 
+ ```
+``` className: "nginx-internal" ```
 
 ## Timer block support
 
