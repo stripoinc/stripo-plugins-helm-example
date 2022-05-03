@@ -1,10 +1,17 @@
-### Requirements local tools
+### Prerequisites
+```
+To follow this instruction, you will need to install following before you start:
+   - AWS EKS (Elastic Kubernetes Service)
+   - PostgreSQL Database
+```
+
+### Installing required tools on admin machine
 ```
 kubectl (https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 helm  (https://helm.sh/docs/intro/install/)
 ```
 
-### Create database on postgresql
+### Create databases for PostgreSQL
 ``` sql
 CREATE DATABASE stripo_plugin_local_custom_blocks;
 CREATE DATABASE stripo_plugin_local_plugin_details;
@@ -13,13 +20,15 @@ CREATE DATABASE stripo_plugin_local_drafts;
 CREATE DATABASE stripo_plugin_local_bank_images;
 CREATE DATABASE stripo_plugin_local_plugin_stats;
 CREATE DATABASE stripo_plugin_local_securitydb;
+CREATE DATABASE stripo_plugin_local_timers;   ---> see section 'Timer block support'
+CREATE DATABASE countdowntimer;               ---> see section 'Timer block support'
 ```
 
-### Create s3 bucket
+### Create s3 bucket for image saving
 https://stripo.email/ru/plugin-api/#configuration-of-aws-s3-storage
 
-### Change application.properties postgres connections in yaml files. 
-Files to change:
+### Change PoetgreSQL connection in application.properties
+List of files to be changed:
 
 ```stripo-plugin-custom-blocks-service.yaml``` 
 
@@ -35,7 +44,11 @@ Files to change:
 
 ``` stripo-security-service.yaml ```
 
-Example stripo-security-service.yaml:
+``` countdowntimer.yaml ```
+
+``` stripo-timer-api.yaml ```
+
+Example (stripo-security-service.yaml):
 ``` yml
 configmap:
   enabled: true
@@ -49,7 +62,7 @@ configmap:
       auth.username=security-service
       auth.passwordV2=secret 
 ```
-### Change aws credentials stripo-plugin-documents-service.yaml
+### Change aws credentials stripo-plugin-documents-service.yaml (to get S3 storage)
 ``` yml
       storage.internal.aws.accessKey=
       storage.internal.aws.secretKey=
@@ -65,7 +78,7 @@ You need to replace
 tag: "latest"
 ```
 with the actual tag version in yaml files.
-Files to change:
+List of files to be changed:
 ```amp-validator-service.yaml```
 ```patches-service.yaml```
 ```screenshot-service.yaml```
@@ -110,7 +123,7 @@ helm repo update
 ## Install all plugins
 ```
 mkdir -p secrets
-# add file to secrets docker-hub-secret.yaml
+# add file to secrets docker-hub-secret.yaml (to be able to pull docker images)
 ./install_all.sh
 ```
 
@@ -120,16 +133,21 @@ INSERT INTO plugins(name, plugin_id, secret_key, created_on, website, email, sta
     VALUES ('demoplugin', '7a4b7b4092e011eba8b30242ac130004', 'e55c869d9e2846879c2e8eba1bf1b41b', '2024-04-01 00:00:00+00', '', '', 'ACTIVE', '{"theme":{"type":"CUSTOM","params":{"primary-color":"#32cb4b","secondary-color":"#ffffff","border-radius-base":"17px","customFontLink":"","font-size":"14px","font-family":"-apple-system, BlinkMacSystemFont, \"Segoe UI\", Oxygen-Sans, Ubuntu, Cantarell, \"Helvetica Neue\", sans-serif","option-panel-background-color":"#f6f6f6","default-font-color":"#555555","panels-border-color":"#dddddd"},"removePluginBranding":true},"imageGallery":{"type":"PLUGIN","awsRegion":"ap-south-1","tabs":[{"label":{"en":"Email"},"key":"email_${emailId}"}],"maxFileSizeInKBytes":2048,"imagesBankEnabled":false,"imagesBankLabel":{"en":"Stock"},"pexelsEnabled":false,"pixabayEnabled":false,"iconFinderEnabled":false,"imageSearchEnabled":false,"iconSearchEnabled":false,"skipChunkedTransferEncoding":true},"blocksLibrary":{"enabled":true,"tabs":[{"viewOrder":0,"label":{"en":"Email"},"key":"email_${emailId}"}],"view":"FULL_WIDTH"},"baseBlocks":{"imageEnabled":true,"textEnabled":true,"buttonEnabled":true,"spacerEnabled":true,"videoEnabled":true,"socialNetEnabled":true,"bannerEnabled":true,"menuEnabled":true,"htmlEnabled":true,"timerEnabled":false,"ampCarouselEnabled":true,"ampAccordionEnabled":true,"ampFormControlsEnabled":true},"blockControls":{"blockVisibilityEnabled":true,"mobileIndentPluginEnabled":true,"mobileInversionEnabled":true,"mobileAlignmentEnabled":true,"stripePaddingEnabled":true,"containerBackgroundEnabled":true,"structureBackgroundImageEnabled":true,"containerBackgroundImageEnabled":true,"dynamicStructuresEnabled":true,"imageSrcLinkEnabled":true,"ampVisibilityEnabled":true,"smartBlocksEnabled":true,"imageEditorPluginEnabled":true,"synchronizableModulesEnabled":false,"rolloverEffectEnabled":true},"permissionsApi":{},"mergeTagsEnabled":true,"specialLinksEnabled":false,"customFontsEnabled":true,"ownControls":true,"autoSaveApi":{"enabled":false,"username":"username","password":"password"},"undoEnabled":true,"versionHistoryEnabled":true}', 'ENTERPRISE', '2021-04-01 00:00:00+00', '2024-04-01 00:00:00+00', null, 'cope')
 ```
 
-### Change nginx config replace ``` plugins.conf ```
+### Change nginx config replace ``` plugins.conf ``` also look at file plugins-external.conf
 ``` conf
 {{ public_domain }}
 {{ emple-loadbalancer-ingress }}
 {{ S3_BUCKET_URI }}
 ```
 
+### If you want to have access outside - you have to use nginx(example: plugins-external.conf) + ingress(install according to the https://kubernetes.github.io/ingress-nginx/deploy/#aws)  and make change in file emple-loadbalancer.yaml
+```
+ className: "nginx-internal"
+```
+
 ## Timer block support
 
-* Create databases for countdowntimer and stripo-timer-api
+* Create databases for countdowntimer and stripo-timer-api for PostgreSQL
 
 ``` sql
 create database countdowntimer;
