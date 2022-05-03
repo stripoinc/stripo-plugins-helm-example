@@ -142,9 +142,12 @@ INSERT INTO plugins(name, plugin_id, secret_key, created_on, website, email, sta
 
 ### If you want to have access outside 
  ``` 
- You have to use nginx(example: plugins-external.conf) + ingress(install according to the https://kubernetes.github.io/ingress-nginx/deploy/#aws)  and make change in file emple-loadbalancer.yaml 
+ You have to use nginx(example: plugins-external.conf) + ingress(install according to the https://kubernetes.github.io/ingress-nginx/deploy/#aws) 
+  and make change in file emple-loadbalancer.yaml
+
+    className: "nginx-internal"
  ```
-``` className: "nginx-internal" ```
+
 
 ## Timer block support
 
