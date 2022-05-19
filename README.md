@@ -1,7 +1,7 @@
 <img src="https://my.stripo.email/cabinet/nav-brand.8b487c2de1ab15c17b62.svg" alt="Stripo Logo" style="width: 50%"/>
 <br/>
 
-#Stripo plugin deployment manual
+# Stripo plugin deployment manual
 
 ## Infrastructure Overview
 On the high level Stripo plugin infrastructure looks like:
@@ -53,27 +53,25 @@ helm  (https://helm.sh/docs/intro/install/)
 
 ### Video manual to create Stripo environment with Amazon EKS
 
-| # | Description | Link | Resources
+| # | Description | Link | Resources |
 | ----------- | ----------- | ----------- | ----------- | 
-| 1 | Create Amazon EKS cluster | <a href="https://drive.google.com/file/d/1zDo-TOQVKDr3v2II3N_3eiULL9iG390P/view?usp=sharing" target="_blank">Video</a> | ./resources/cluster.yaml |
-| 2 | Install Nginx ingress controller | <a href="https://drive.google.com/file/d/1COfkeV70c1gl9SeCs5JeDvKgpW1LI8AM/view?usp=sharing" target="_blank">Video</a> | https://kubernetes.github.io/ingress-nginx/deploy/#aws |
-| 3 | Create DNS record in Route 53 | <a href="https://drive.google.com/file/d/1o_ozrML9zHxCvt5DyxRxLRMMgJ_qVraB/view?usp=sharing" target="_blank">Video</a> | |
+| 1 | Create Amazon EKS cluster | [Video](https://drive.google.com/file/d/1zDo-TOQVKDr3v2II3N_3eiULL9iG390P/view?usp=sharing) | ./resources/cluster.yaml |
+| 2 | Install Nginx ingress controller | [Video](https://drive.google.com/file/d/1COfkeV70c1gl9SeCs5JeDvKgpW1LI8AM/view?usp=sharing) | <https://kubernetes.github.io/ingress-nginx/deploy/#aws> |
+| 3 | Create DNS record in Route 53 | [Video](https://drive.google.com/file/d/1o_ozrML9zHxCvt5DyxRxLRMMgJ_qVraB/view?usp=sharing) | |
 | 4 | Create PostgreSQL databases | --- | ./resources/postgres/01_create_databases.sql |
-| 5 | Create S3 bucket | <a href="https://drive.google.com/file/d/1cneCKGVKpeOoaJ_hSXD_TeV2aCyXyin7/view?usp=sharing" target="_blank">Video</a> | https://stripo.email/ru/plugin-api/#configuration-of-aws-s3-storage |
+| 5 | Create S3 bucket | [Video](https://drive.google.com/file/d/1cneCKGVKpeOoaJ_hSXD_TeV2aCyXyin7/view?usp=sharing) | <https://stripo.email/ru/plugin-api/#configuration-of-aws-s3-storage> |
 | 6 | Enrich yaml properties with actual DB and AWS S3 settings | --- | |
 | 7 | Add helm repository | --- | ./resources/helm_repo.sh |
 | 8 | Add ingress configuration | -?- | |
-| 9 | Run kubernetes cluster | <a href="https://drive.google.com/file/d/1Jkk7Jpg3jx0huUtSC-XTeiQaI1PcsNgU/view?usp=sharing" target="_blank">Video</a> | ./install_all.sh |
+| 9 | Run kubernetes cluster | [Video](https://drive.google.com/file/d/1Jkk7Jpg3jx0huUtSC-XTeiQaI1PcsNgU/view?usp=sharing) | ./install_all.sh |
 | 10 | Apply database scripts | --- | ./resources/postgres/02_register_plugin.sql |
 | 11 | Configure Nginx | --- | ./resources/nginx/plugins.conf |
 | 12 | Configure countdown timer | --- |  |
-| 13 | Test your configuration | <a href="https://drive.google.com/file/d/1LYncj3u15BTSWacXKUxH_oVNJ9Dy3qlY/view?usp=sharing" target="_blank">Video</a> |
+| 13 | Test your configuration | [Video](https://drive.google.com/file/d/1LYncj3u15BTSWacXKUxH_oVNJ9Dy3qlY/view?usp=sharing) |
 
 ### Personal secret key
 Personal secret key is used to download docker images from Stripo docker hub.
 Put secret key (docker-hub-secret.yaml) to ```./secrets``` folder
-
-
 
 ### Logging
 #### ELK stack
@@ -152,6 +150,16 @@ To apply the new tag version run the following command:
 ./update.sh emple-loadbalancer
 ```
 
-#### Plugin configuration description
+### Plugin registration DB script description
 
-???
+```./resources/postgres/02_register_plugin.sql```
+
+| Column | Description |
+| ----------- | ----------- | 
+| name | The name of your application. It will not be displayed elsewhere, but may be used for your convenience to distinguish the records within table |
+| plugin_id | A unique GUID of your application without hyphens. You are welcome to use [this](https://www.guidgenerator.com/online-guid-generator.aspx) service to generate a new one |
+| secret_key | A unique GUID of your secret key without hyphens. You are welcome to use [this](https://www.guidgenerator.com/online-guid-generator.aspx) service to generate a new one |
+| status | The status of the application. It always should be "ACTIVE" |
+| config | The JSON config of this application. Described in ```./resources/plugin_config.json``` |
+| subscription_type | The pricing plan of the application. In your case, it is always "ENTERPRISE" |
+| sub_domain | Create here any string value that will be used as a subdomain for the links with uploaded images. Works only if you have configured Stripo storage for image hosting |
