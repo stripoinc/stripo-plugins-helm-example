@@ -78,19 +78,8 @@ configmap:
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_timers
       spring.datasource.username=example
       spring.datasource.password=secret
-      spring.security.user.name=timeradmin
-      spring.security.user.password=secret
-      spring.security.user.passwordV2=secret
       timer.url=http://countdowntimer:80/api/
       timer.username=Admin
       timer.password=secret
-      timer.checkLimit=false
-      auth.enableJwtAuth=false
-      auth.innerServiceUsername=innerTimerApiUsername
-      auth.innerServicePassword=test
-      spring.security.user.name=admin
-      spring.security.user.password=test
-      spring.security.user.roles=USER
-      auth.innerServiceUsername=innerTimerApiUsername
-      auth.innerServicePassword=test
-
+    log.properties: |
+      logging.level.root=INFO

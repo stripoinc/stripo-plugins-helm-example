@@ -43,7 +43,4 @@ configmap:
   enabled: true
   extraScrapeConfigs:
     application.properties: |
-      auth.password=secret
-      auth.username=amp-admin
-      server.port=8080
       maxRequestSize=10mb

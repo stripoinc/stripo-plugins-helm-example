@@ -55,11 +55,5 @@ configmap:
   enabled: true
   extraScrapeConfigs:
     application.properties: |
-      base.app.url=
-      amp.validator.url=http://amp-validator-service:8080
-      amp.validator.username=amp-admin
-      amp.validator.password=secret
-      amp.validator.active=true
-      use.security.policy.for.amp=false
-      auth.swaggerUsername=stripe-swagger-user
-      auth.swaggerPassword=secret
+    log.properties: |
+      logging.level.root=INFO

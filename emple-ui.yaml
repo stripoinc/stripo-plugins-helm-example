@@ -12,6 +12,17 @@ service:
   type: ClusterIP
   port: 8080
 
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: static.plugins.info
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
 resources:
   limits:
     memory: 128Mi
