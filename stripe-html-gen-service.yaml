@@ -53,5 +53,6 @@ configmap:
   enabled: true
   extraScrapeConfigs:
     application.properties: |
+      
     log.properties: |
       logging.level.root=INFO
