@@ -64,7 +64,7 @@ helm  (https://helm.sh/docs/intro/install/)
 | 7 | Add helm repository | --- | ./resources/helm_repo.sh |
 | 8 | Add ingress configuration | -?- | |
 | 9 | Run kubernetes cluster | [Video](https://drive.google.com/file/d/1Jkk7Jpg3jx0huUtSC-XTeiQaI1PcsNgU/view?usp=sharing) | ./install_all.sh |
-| 10 | Apply database scripts | --- | ./resources/postgres/02_register_plugin.sql |
+| 10 | Apply database script to ```stripo_plugin_local_plugin_details``` DB | --- | ./resources/postgres/02_register_plugin.sql |
 | 11 | Configure Nginx | --- | ./resources/nginx/plugins.conf |
 | 12 | Configure countdown timer | --- |  |
 | 13 | Test your configuration | [Video](https://drive.google.com/file/d/1LYncj3u15BTSWacXKUxH_oVNJ9Dy3qlY/view?usp=sharing) |
