@@ -64,14 +64,6 @@ configmap:
   enabled: true
   extraScrapeConfigs:
     application.properties: |
-      service.plugindetails.url=http://stripo-plugin-details-service:8080
-      service.customblocks.url=http://stripo-plugin-custom-blocks-service:8080
-      service.drafts.url=http://stripo-plugin-drafts-service:8080
-      service.documents.url=http://stripo-plugin-documents-service:8080
-      service.imagesbank.url=http://stripo-plugin-image-bank-service:8080
-      service.htmlgen.url=http://stripe-html-gen-service:8080
-      service.htmlcleaner.url=http://stripe-html-cleaner-service:8080
-      service.statistics.url=http://stripo-plugin-statistics-service:8080
       jwt.secret.apiKeyV2=secret
       jwt.secret.expirationInMinutes=30
     log.properties: |

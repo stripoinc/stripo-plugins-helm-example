@@ -1,0 +1,102 @@
+replicaCount: 1
+
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+imagePullSecrets:
+  - name: dockerhub
+
+service:
+  type: NodePort
+  port: 8080
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+  # kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: plugins-internal.info
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  # tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  limits:
+    memory: 128Mi
+  requests:
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 90
+  targetMemoryUtilizationPercentage: 90
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env:
+  - name: APPNAME
+    value: plugins
+  - name: ENV
+    value: PLUGINS
+  - name: PROFILE
+    value: PLUGINS
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    haproxy.cfg: |
+      defaults
+          log stdout format raw local0 info
+          mode    http
+          option  httplog
+          option  dontlognull
+          retries 3
+          option redispatch
+          maxconn 200000
+          timeout connect 9000
+          timeout check 9000
+          timeout client 800000
+          timeout server 800000
+          default-server init-addr last,libc,none
+          option http-server-close
+      frontend services
+          mode http
+          bind *:80
+          default_backend stripo-plugin-api-gateway-be
+          acl url_stripo-plugin-api-gateway path_beg /stripo-plugin-api-gateway
+          use_backend stripo-plugin-api-gateway-be if url_stripo-plugin-api-gateway
+          acl url_stripo-plugin-proxy-service path_beg /stripo-plugin-proxy-service
+          use_backend stripo-plugin-proxy-service-be if url_stripo-plugin-proxy-service
+          acl url_emple-ui path_beg /static
+          use_backend emple-ui-be if url_emple-ui
+      backend stripo-plugin-api-gateway-be
+          balance source
+          option httpclose
+          option forwardfor
+          reqrep ^([^\ ]*)\ /stripo-plugin-api-gateway/(.*)     \1\ /\2
+          server site stripo-plugin-api-gateway:8080  check inter 9000
+      backend stripo-plugin-proxy-service-be
+          balance source
+          option httpclose
+          option forwardfor
+          reqrep ^([^\ ]*)\ /stripo-plugin-proxy-service/(.*)     \1\ /\2
+          server site stripo-plugin-proxy-service:8080  check inter 5000 backup
+      backend emple-ui-be
+          balance source
+          option httpclose
+          option forwardfor
+          reqrep ^([^\ ]*)\ /static/(.*)     \1\ /\2
+          server site emple-ui:8080  check inter 5000 backup

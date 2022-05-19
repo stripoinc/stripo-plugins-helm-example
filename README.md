@@ -51,23 +51,22 @@ kubectl (https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 helm  (https://helm.sh/docs/intro/install/)
 ```
 
-### Video manual to create Stripo environment with Amazon EKS
+### Manual to create Stripo environment with Amazon EKS
 
 | # | Description | Link | Resources |
 | ----------- | ----------- | ----------- | ----------- | 
-| 1 | Create Amazon EKS cluster | [Video](https://drive.google.com/file/d/1zDo-TOQVKDr3v2II3N_3eiULL9iG390P/view?usp=sharing) | ./resources/cluster.yaml |
+| 1 | Create Amazon EKS cluster | [Video](https://drive.google.com/file/d/1zDo-TOQVKDr3v2II3N_3eiULL9iG390P/view?usp=sharing) | [eksctl](https://eksctl.io/) <br> ./resources/cluster.yaml |
 | 2 | Install Nginx ingress controller | [Video](https://drive.google.com/file/d/1COfkeV70c1gl9SeCs5JeDvKgpW1LI8AM/view?usp=sharing) | <https://kubernetes.github.io/ingress-nginx/deploy/#aws> |
 | 3 | Create DNS record in Route 53 | [Video](https://drive.google.com/file/d/1o_ozrML9zHxCvt5DyxRxLRMMgJ_qVraB/view?usp=sharing) | |
 | 4 | Create PostgreSQL databases | --- | ./resources/postgres/01_create_databases.sql |
 | 5 | Create S3 bucket | [Video](https://drive.google.com/file/d/1cneCKGVKpeOoaJ_hSXD_TeV2aCyXyin7/view?usp=sharing) | <https://stripo.email/ru/plugin-api/#configuration-of-aws-s3-storage> |
 | 6 | Enrich yaml properties with actual DB and AWS S3 settings | --- | |
-| 7 | Add helm repository | --- | ./resources/helm_repo.sh |
-| 8 | Add ingress configuration | -?- | |
-| 9 | Run kubernetes cluster | [Video](https://drive.google.com/file/d/1Jkk7Jpg3jx0huUtSC-XTeiQaI1PcsNgU/view?usp=sharing) | ./install_all.sh |
-| 10 | Apply database script to ```stripo_plugin_local_plugin_details``` DB | --- | ./resources/postgres/02_register_plugin.sql |
-| 11 | Configure Nginx | --- | ./resources/nginx/plugins.conf |
-| 12 | Configure countdown timer | --- |  |
-| 13 | Test your configuration | [Video](https://drive.google.com/file/d/1LYncj3u15BTSWacXKUxH_oVNJ9Dy3qlY/view?usp=sharing) |
+| 7 | Add helm repository | | ```bash ./resources/helm_repo.sh``` |
+| 8 | Run kubernetes cluster | [Video](https://drive.google.com/file/d/1Jkk7Jpg3jx0huUtSC-XTeiQaI1PcsNgU/view?usp=sharing) | ./install_all.sh |
+| 9 | Apply database script to ```stripo_plugin_local_plugin_details``` DB |  | ./resources/postgres/02_register_plugin.sql |
+| 10 | Configure Nginx | --- | ./resources/nginx/plugins.conf |
+| 11 | Configure countdown timer | --- |  |
+| 12 | Test your configuration | [Video](https://drive.google.com/file/d/1LYncj3u15BTSWacXKUxH_oVNJ9Dy3qlY/view?usp=sharing) |
 
 ### Personal secret key
 Personal secret key is used to download docker images from Stripo docker hub.
