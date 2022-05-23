@@ -61,12 +61,12 @@ helm  (https://helm.sh/docs/intro/install/)
  | 4   | Create PostgreSQL databases                                          | [Video](https://kub.stripocdn.email/content/materials/git/create_dbs.mp4)             | ./resources/postgres/01_create_databases.sql                          |
  | 5   | Create S3 bucket                                                     | [Video](https://kub.stripocdn.email/content/materials/git/s3_bucket.mp4)              | <https://stripo.email/ru/plugin-api/#configuration-of-aws-s3-storage> |
  | 6   | Enrich yaml properties with actual DB and AWS S3 settings            | [Video](https://kub.stripocdn.email/content/materials/git/yaml_config.mp4)            |                                                                       |
- | 7   | Add helm repository                                                  | ---                                                                                   | ```bash ./resources/helm_repo.sh```                                   |
+ | 7   | Add helm repository                                                  |                                                                                       | ```bash ./resources/helm_repo.sh```                                   |
  | 8   | Run kubernetes cluster                                               | [Video](https://kub.stripocdn.email/content/materials/git/run_kubernetes_cluster.mp4) | ./install_all.sh                                                      |
  | 9   | Apply database script to ```stripo_plugin_local_plugin_details``` DB |                                                                                       | ./resources/postgres/02_register_plugin.sql                           |
  | 10  | Configure Nginx                                                      | [Video](https://kub.stripocdn.email/content/materials/git/nginx_config.mp4)           | ./resources/nginx/plugins.conf                                        |
- | 11  | Configure countdown timer                                            | ---                                                                                   |                                                                       |
- | 12  | Test your configuration                                              | [Video](https://kub.stripocdn.email/content/materials/git/test_configuration.mp4)     |
+ | 11  | Configure countdown timer                                            | [Video](https://kub.stripocdn.email/content/materials/git/countdowntimer.mp4)         |                                                                       |
+ | 12  | Test your configuration                                              | [Video](https://kub.stripocdn.email/content/materials/git/configuration_testing.mp4)  |
 
 ### Personal secret key
 Personal secret key is used to download docker images from Stripo docker hub.
