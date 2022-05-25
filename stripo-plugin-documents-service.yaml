@@ -61,8 +61,5 @@ configmap:
       storage.internal.aws.bucketName=stripo-plugin-test
       storage.internal.aws.region=eu-central-1
       storage.internal.aws.baseDownloadUrl=
-      plugin.service.screenshotUrl=http://screenshot-service:8080
-      plugin.service.pluginDetailsUrl=http://stripo-plugin-details-service:8080
-      stripo.security.service.baseUrl=http://stripo-security-service:8080
-      stripo.security.service.username=security-service
-      stripo.security.service.passwordV2=secret
+    log.properties: |
+      logging.level.root=INFO

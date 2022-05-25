@@ -56,6 +56,5 @@ configmap:
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_plugin_details
       spring.datasource.username=example
       spring.datasource.password=secret
-      stripo.security.service.baseUrl=http://stripo-security-service:8080
-      stripo.security.service.username=security-service
-      stripo.security.service.passwordV2=secret
+    log.properties: |
+      logging.level.root=INFO
