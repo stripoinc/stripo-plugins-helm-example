@@ -67,6 +67,7 @@ helm  (https://helm.sh/docs/intro/install/)
  | 10  | Configure Nginx                                                      | [Video](https://kub.stripocdn.email/content/materials/git/nginx_config.mp4)           | ./resources/nginx/plugins.conf                                        |
  | 11  | Configure countdown timer                                            | [Video](https://kub.stripocdn.email/content/materials/git/countdowntimer.mp4)         |                                                                       |
  | 12  | Test your configuration                                              | [Video](https://kub.stripocdn.email/content/materials/git/configuration_testing.mp4)  |
+ | 13  | Run on minikube                                                      | [Video](https://kub.stripocdn.email/content/materials/git/minikube.mp4)               |
 
 ### Personal secret key
 Personal secret key is used to download docker images from Stripo docker hub.
