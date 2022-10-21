@@ -53,6 +53,8 @@ configmap:
   enabled: true
   extraScrapeConfigs:
     application.properties: |
-      
+      spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_html_gen
+      spring.datasource.username=example
+      spring.datasource.password=secret
     log.properties: |
       logging.level.root=INFO
