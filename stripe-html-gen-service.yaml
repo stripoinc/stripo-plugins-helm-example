@@ -56,5 +56,7 @@ configmap:
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_html_gen
       spring.datasource.username=example
       spring.datasource.password=secret
+      auth.swaggerUsername=stripe-swagger-user
+      auth.swaggerPassword=secret
     log.properties: |
       logging.level.root=INFO
