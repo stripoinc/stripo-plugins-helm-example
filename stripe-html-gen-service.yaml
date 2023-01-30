@@ -43,11 +43,13 @@ env:
   - name: SPRING_CONFIG_LOCATION
     value: file:///config/
   - name: JVM_MEMORY_OPTS
-    value: -Xss256k -Xms400m -Xmx512m -XX:PermSize=128M -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=128M -Dspring.cloud.config.enabled=false -Daws.secretsmanager.enabled=false
+    value: -Dspring.cloud.config.enabled=false -Daws.secretsmanager.enabled=false
   - name: LOGSTASH_HOST
     value: logstash
   - name: LOGSTASH_PORT
     value: "5008"
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms400m -Xmx512m -XX:ReservedCodeCacheSize=128M
 
 configmap:
   enabled: true
