@@ -60,12 +60,12 @@ env:
     value: file:///config/
   - name: JVM_MEMORY_OPTS
     value: -Dspring.cloud.config.enabled=false -Daws.secretsmanager.enabled=false
-  - name: LOGSTASH_HOST
-    value: logstash
-  - name: LOGSTASH_PORT
-    value: "5008"
   - name: JAVA_TOOL_OPTIONS
     value: -Xss256k -Xms256m -Xmx400m -XX:ReservedCodeCacheSize=128M
+#  - name: LOGSTASH_HOST
+#    value: logstash
+#  - name: LOGSTASH_PORT
+#    value: "5008"
 
 configmap:
   enabled: true
@@ -75,5 +75,6 @@ configmap:
       jwt.secret.expirationInMinutes=30
       management.tracing.sampling.probability=0
       management.zipkin.tracing.endpoint=http://localhost:9411/api/v2/spans
+      service.ai.url=http://ai-service:8080
     log.properties: |
       logging.level.root=INFO

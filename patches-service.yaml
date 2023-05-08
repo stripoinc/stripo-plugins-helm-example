@@ -42,10 +42,10 @@ env:
     value: PLUGINS
   - name: NODE_MEMORY
     value: "256"
-  - name: LOGSTASH_HOST
-    value: logstash
-  - name: LOGSTASH_PORT
-    value: "5008"
+#  - name: LOGSTASH_HOST
+#    value: logstash
+#  - name: LOGSTASH_PORT
+#    value: "5008"
 
 configmap:
   enabled: true

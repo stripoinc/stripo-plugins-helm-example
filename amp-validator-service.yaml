@@ -19,10 +19,10 @@ env:
     value: PLUGINS
   - name: PROFILE
     value: PLUGINS
-  - name: LOGSTASH_HOST
-    value: logstash
-  - name: LOGSTASH_PORT
-    value: "5008"
+#  - name: LOGSTASH_HOST
+#    value: logstash
+#  - name: LOGSTASH_PORT
+#    value: "5008"
 
 resources: 
   limits:

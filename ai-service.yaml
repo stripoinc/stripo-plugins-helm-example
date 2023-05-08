@@ -38,10 +38,6 @@ env:
     value: PLUGINS
   - name: PROFILE
     value: PLUGINS
-  - name: LOGSTASH_HOST
-    value: logstash
-  - name: LOGSTASH_PORT
-    value: "5008"
   - name: SPRING_CONFIG_NAME
     value: application,jdbc,log,base
   - name: SPRING_CONFIG_LOCATION
@@ -50,6 +46,10 @@ env:
     value: -Xss256k -Xms256m -Xmx400m -XX:ReservedCodeCacheSize=128M
   - name: JVM_MEMORY_OPTS
     value: -Dspring.cloud.config.enabled=false -Daws.secretsmanager.enabled=false
+#  - name: LOGSTASH_HOST
+#    value: logstash
+#  - name: LOGSTASH_PORT
+#    value: "5008"
 
 configmap:
   enabled: true
