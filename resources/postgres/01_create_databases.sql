@@ -6,5 +6,6 @@ CREATE DATABASE stripo_plugin_local_plugin_details;
 CREATE DATABASE stripo_plugin_local_plugin_stats;
 CREATE DATABASE stripo_plugin_local_securitydb;
 CREATE DATABASE stripo_plugin_local_timers;
+CREATE DATABASE ai_service;
 CREATE DATABASE countdowntimer;
 CREATE DATABASE stripo_plugin_local_html_gen;

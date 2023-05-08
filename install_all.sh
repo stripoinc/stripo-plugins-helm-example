@@ -53,6 +53,9 @@ check_result
 echo -ne '#######                   (31%)\r'
 install_or_skip "stripo-plugin-details-service"
 check_result
+echo -ne '########                  (37%)\r'
+install_or_skip "ai-service"
+check_result
 echo -ne '##########                (41%)\r'
 install_or_skip "screenshot-service"
 check_result
