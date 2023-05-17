@@ -163,3 +163,7 @@ To apply the new tag version run the following command:
 | config            | The JSON config of this application. Described in ```./resources/plugin_config.json```                                                                                   |
 | subscription_type | The pricing plan of the application. In your case, it is always "ENTERPRISE"                                                                                             |
 | sub_domain        | Create here any string value that will be used as a subdomain for the links with uploaded images. Works only if you have configured Stripo storage for image hosting     |
+
+
+### Migration Guide
+See docs [here](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/docs/migration.md).
