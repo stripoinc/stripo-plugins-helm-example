@@ -1,6 +1,7 @@
 replicaCount: 1
 
 image:
+  repository: esputnik/ai-service
   pullPolicy: IfNotPresent
   # Overrides the image tag with the latest release tag value
   tag: "latest"

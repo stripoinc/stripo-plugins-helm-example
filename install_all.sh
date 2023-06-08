@@ -47,6 +47,9 @@ check_result
 echo -ne '###                       (10%)\r'
 install_or_skip "stripo-plugin-proxy-service"
 check_result
+echo -ne '###                       (15%)\r'
+install_or_skip "redis"
+check_result
 echo -ne '#####                     (23%)\r'
 install_or_skip "stripo-plugin-statistics-service"
 check_result
