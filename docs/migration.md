@@ -3,7 +3,7 @@
 This document is meant to help you migrate your Stripo environment to the latest release version.
 
 
-## Upgrade to the 1.18.0 Version
+## Upgrade to the 1.81.0 Version
 
 ### AI feature
 New microservice **ai-service** was added to support AI assistant feature.
