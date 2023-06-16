@@ -2,6 +2,17 @@
 ***
 This document is meant to help you migrate your Stripo environment to the latest release version.
 
+## Upgrade to the 1.82.0 Version
+
+### Rate limit feature
+The following settings have been added to limit the number of requests from a single IP to the plugin-api-gateway settings:
+
+* **rate.limit.publicRules**=[{"limit":10000,"durationSecond":60},{"limit":100000,"durationSecond":3600}] - rules for limiting the number of requests within specified periods. Example: 10,000 requests per minute and 100,000 requests per hour.
+* **rate.limit.enabled=true** - a flag indicating whether the limitations should be applied.
+* **redisson.url=redis://redis:6379** - the path to Redis if rate.limit.enabled=true.
+* **redisson.password=test** - the password for the Redis database.
+* **redisson.authorized=true** - indicates whether authorization to Redis is required.
+
 
 ## Upgrade to the 1.81.0 Version
 
