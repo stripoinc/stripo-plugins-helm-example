@@ -18,6 +18,8 @@ The following settings have been added to limit the number of requests from a si
 * **redisson.password=test** - the password for the Redis database.
 * **redisson.authorized=true** - indicates whether authorization to Redis is required.
 
+Update your config map section in stripo-plugin-api-gateway.yaml to enable this feature
+
 
 ## Upgrade to the 1.81.0 Version
 
