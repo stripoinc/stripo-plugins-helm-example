@@ -2,7 +2,12 @@
 ***
 This document is meant to help you migrate your Stripo environment to the latest release version.
 
-## Upgrade to the 1.82.0 Version
+## Upgrade to the 1.83.0 Version
+
+### Redis service
+New microservice **redis** was added to support Rate Limits feature.
+1. Use redis.yaml file as an example of service configuration and create your own config
+2. Run install_all.sh script to deploy the microservice
 
 ### Rate limit feature
 The following settings have been added to limit the number of requests from a single IP to the plugin-api-gateway settings:

@@ -17,8 +17,13 @@ function install_or_skip {
     CHECK_INSTALL=`helm list --namespace=$NAMESPACE | grep $service_name`
     if [[ "$CHECK_INSTALL" == "" ]] ; then
             echo "-= Install $service_name =-"
-            helm install $service_name stripo/$service_name -f $service_name.yaml --namespace $NAMESPACE
-            kubectl rollout status deploy/$service_name --namespace=$NAMESPACE
+            if [ $service_name  == "redis" ]; then
+                helm install $service_name bitnami/$service_name -f $service_name.yaml --namespace $NAMESPACE
+                kubectl rollout status statefulset/redis-master --namespace=$NAMESPACE
+            else
+                helm install $service_name stripo/$service_name -f $service_name.yaml --namespace $NAMESPACE
+                kubectl rollout status deploy/$service_name --namespace=$NAMESPACE
+            fi
     else
         # if you need to update all services, uncomment the line
         #helm upgrade $service_name stripo/$service_name -f $service_name.yaml --namespace $NAMESPACE
@@ -46,6 +51,9 @@ install_or_skip "emple-ui"
 check_result
 echo -ne '###                       (10%)\r'
 install_or_skip "stripo-plugin-proxy-service"
+check_result
+echo -ne '###                       (15%)\r'
+install_or_skip "redis"
 check_result
 echo -ne '#####                     (23%)\r'
 install_or_skip "stripo-plugin-statistics-service"
