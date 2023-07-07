@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag with the latest release tag value
-  tag: "latest"
+  tag: "20230705-0946_8a8d9c8"
 
 imagePullSecrets: 
   - name: dockerhub

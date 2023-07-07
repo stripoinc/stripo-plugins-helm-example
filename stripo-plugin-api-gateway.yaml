@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag with the latest release tag value
-  tag: "latest"
+  tag: "20230705-1246_74d12b1"
 
 imagePullSecrets: 
   - name: dockerhub
@@ -78,18 +78,3 @@ configmap:
       service.ai.url=http://ai-service:8080
     log.properties: |
       logging.level.root=INFO
-    base.properties: |
-      management.server.port=8081
-      management.endpoints.web.exposure.include=health,prometheus,metrics
-      management.endpoint.health.probes.enabled=true
-      management.metrics.tags.application=${spring.application.name}
-      service.plugindetails.url=http://stripo-plugin-details-service:8080
-      service.customblocks.url=http://stripo-plugin-custom-blocks-service:8080
-      service.drafts.url=http://stripo-plugin-drafts-service:8080
-      service.documents.url=http://stripo-plugin-documents-service:8080
-      service.imagesbank.url=http://stripo-plugin-image-bank-service:8080
-      service.htmlgen.url=http://stripe-html-gen-service:8080
-      service.htmlcleaner.url=http://stripe-html-cleaner-service:8080
-      service.statistics.url=http://stripo-plugin-statistics-service:8080
-      service.ai.url=http://ai-service:8080
-      service.timer.url=http://stripo-timer-api:8080

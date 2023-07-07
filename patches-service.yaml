@@ -5,7 +5,7 @@ DeadlineSeconds: 260
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag with the latest release tag value
-  tag: "latest"
+  tag: "20230630-0732_568c0cf"
 
 imagePullSecrets: 
   - name: dockerhub
