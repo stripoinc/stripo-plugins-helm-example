@@ -4,8 +4,8 @@ This document is meant to help you migrate your Stripo environment to the latest
 
 ## Upgrade to the 1.84.0 Version
 1. Modify ai-service.yaml, add block 'base.properties' to configmap:
-    `base.properties: |`
-      `management.server.port=8081`
+    `base.properties: |
+      management.server.port=8081
       management.endpoints.web.exposure.include=health,prometheus,metrics
       management.endpoint.health.probes.enabled=true
       management.metrics.tags.application=${spring.application.name}`
