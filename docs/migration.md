@@ -4,7 +4,7 @@ This document is meant to help you migrate your Stripo environment to the latest
 
 ## Upgrade to the 1.84.0 Version
 1. Download update_all.sh from this repo
-2. Run bash update_all.sh for update charts
+2. Run `bash update_all.sh` for update charts
 
 ## Upgrade to the 1.83.0 Version
 New microservice **redis** was added.
