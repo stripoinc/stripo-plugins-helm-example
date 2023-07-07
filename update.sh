@@ -2,6 +2,8 @@
 
 NAMESPACE=stripo
 
+helm repo update
+
 # To check the status of the previous execution
 function check_result {
   if [[ "$?" -ne 0 ]] ; then
@@ -20,7 +22,6 @@ function update {
     fi
     echo "-= Start update $service_name =-"
     echo -ne '##                        (5%)\r'
-    helm repo update stripo
     check_result
     echo -ne '###                       (10%)\r'
     CHECK_INSTALL=`helm list --namespace=$NAMESPACE | grep $service_name`

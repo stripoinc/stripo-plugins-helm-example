@@ -2,10 +2,22 @@
 ***
 This document is meant to help you migrate your Stripo environment to the latest release version.
 
+## Upgrade to the 1.84.0 Version
+Added the support of different metrics on port 8081:
+* liveness probe - http://localhost:8081/actuator/health/liveness
+* readiness probes - http://localhost:8081/actuator/health/readiness
+* prometheus metrics - http://localhost:8081/actuator/prometheus
+
+#### Action required:
+1. Run update_all.sh to update helm repo
+
+
 ## Upgrade to the 1.83.0 Version
 
 ### Redis service
 New microservice **redis** was added to support Rate Limits feature.
+
+#### Action required:
 1. Use redis.yaml file as an example of service configuration and create your own config
 2. Run install_all.sh script to deploy the microservice
 
@@ -18,6 +30,7 @@ The following settings have been added to limit the number of requests from a si
 * **redisson.password=test** - the password for the Redis database.
 * **redisson.authorized=true** - indicates whether authorization to Redis is required.
 
+#### Action required:
 Update your config map section in stripo-plugin-api-gateway.yaml to enable this feature
 
 
@@ -25,6 +38,8 @@ Update your config map section in stripo-plugin-api-gateway.yaml to enable this 
 
 ### AI feature
 New microservice **ai-service** was added to support AI assistant feature.
+
+#### Action required:
 1. Modify configmap section of stripo-plugin-api-gateway.yaml. 
    1. Add `service.ai.url=http://ai-service:8080 property`
 1. Use ai-service.yaml file as an example of service configuration and create your own config
@@ -32,6 +47,7 @@ New microservice **ai-service** was added to support AI assistant feature.
 
 
 ### Speed up microservice startup time
+#### Action required:
 1. Remove env vars LOGSTASH_HOST and LOGSTASH_PORT from env section in your *.yaml files
 
 This is relevant in case you do not use logstash as a logs collector.
