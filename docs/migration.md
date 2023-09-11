@@ -45,6 +45,20 @@ New microservice **ai-service** was added to support AI assistant feature.
 1. Use ai-service.yaml file as an example of service configuration and create your own config
 1. Run install_all.sh script to deploy the microservice
 
+To enable AI feature you need to modify `stripo_plugin_local_plugin_details` database, `plugins` table, `config` cell. 
+This cell contains JSON with plugin configuration. 
+You need to add
+```json
+{
+  ...,
+  "ai": {
+    "openAiApiKey": "YOUR_OPEN_AI_API_KEY",
+    "textBlockAiEnabled": true,
+    "smartModuleAiEnabled": true
+  }
+}
+```
+
 
 ### Speed up microservice startup time
 #### Action required:
