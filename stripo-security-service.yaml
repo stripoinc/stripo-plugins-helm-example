@@ -18,13 +18,6 @@ resources:
   requests:
     memory: 512Mi
 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 90
-  targetMemoryUtilizationPercentage: 90
-
 nodeSelector: {}
 
 tolerations: []
