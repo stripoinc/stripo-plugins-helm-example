@@ -946,24 +946,7 @@ replica:
   terminationGracePeriodSeconds: 30
   ## Autoscaling configuration
   ##
-  autoscaling:
-    ## @param replica.autoscaling.enabled Enable replica autoscaling settings
-    ##
-    enabled: false
-    ## @param replica.autoscaling.minReplicas Minimum replicas for the pod autoscaling
-    ##
-    minReplicas: 1
-    ## @param replica.autoscaling.maxReplicas Maximum replicas for the pod autoscaling
-    ##
-    maxReplicas: 11
-    ## @param replica.autoscaling.targetCPU Percentage of CPU to consider when autoscaling
-    ##
-    targetCPU: ""
-    ## @param replica.autoscaling.targetMemory Percentage of Memory to consider when autoscaling
-    ##
-    targetMemory: ""
-  ## ServiceAccount configuration
-  ##
+  
   serviceAccount:
     ## @param replica.serviceAccount.create Specifies whether a ServiceAccount should be created
     ##
