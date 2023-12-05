@@ -2,6 +2,13 @@
 ***
 This document is meant to help you migrate your Stripo environment to the latest release version.
 
+## Upgrade to the 1.97.0 Version
+Docker images were moved to **stripo** organization on docker hub
+
+#### Action required:
+1. Run update_all.sh to update helm repo
+
+
 ## Upgrade to the 1.84.0 Version
 Added the support of different metrics on port 8081:
 * liveness probe - http://localhost:8081/actuator/health/liveness
