@@ -1,6 +1,9 @@
 # Migration Guide
 ***
 This document is meant to help you migrate your Stripo environment to the latest release version.
+## Upgrade to the 1.95.0 Version
+#### Action required:
+1. Check your jwt.secret.apiKeyV2 property of stripo-plugin-api-gateway. The value should be at least 64 symbols.
 
 ## Upgrade to the 1.97.0 Version
 Docker images were moved to **stripo** organization on docker hub
