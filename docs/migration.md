@@ -10,7 +10,7 @@ Docker images were moved to **stripo** organization on docker hub
 
 ## Upgrade to the 1.95.0 Version
 #### Action required:
-1. Check your jwt.secret.apiKeyV2 property of stripo-plugin-api-gateway. The value should be at least 64 symbols.
+1. Check your jwt.secret.apiKeyV3 property of stripo-plugin-api-gateway. The value should be at least 64 symbols.
 
 ## Upgrade to the 1.84.0 Version
 Added the support of different metrics on port 8081:
