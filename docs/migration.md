@@ -2,6 +2,11 @@
 ***
 This document is meant to help you migrate your Stripo environment to the latest release version.
 
+## Upgrade to the 1.108.0 Version
+The following settings have been added to limit the requests from only allowed domains to stripe-html-cleaner-service to /compress method:
+
+* **app.cors.allowedOrigins**=*
+
 ## Upgrade to the 1.97.0 Version
 Docker images were moved to **stripo** organization on docker hub
 
