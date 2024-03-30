@@ -1,4 +1,4 @@
-<img src="https://my.stripo.email/cabinet/nav-brand.8b487c2de1ab15c17b62.svg" alt="Stripo Logo" style="width: 50%"/>
+<img src="https://stripo-cdn.stripo.email/img/front/press-kit/logo-horizontal@2x.png" alt="Stripo Logo" style="width: 50%"/>
 <br/>
 
 # Stripo plugin deployment manual
