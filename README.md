@@ -1,22 +1,22 @@
-<img src="https://stripo-cdn.stripo.email/img/front/press-kit/logo-horizontal@2x.png" alt="Stripo Logo" style="width: 50%"/>
+<img src="https://stripo-cdn.stripo.email/img/front/press-kit/logo-horizontal.svg" alt="Stripo Logo" style="width: 198px"/>
 <br/>
 
 # Stripo plugin deployment manual
 
 ## Infrastructure Overview
-On the high level Stripo plugin infrastructure looks like:
+On the high level, the Stripo plugin infrastructure looks like this:
 
 <img src="docs/general_overview.png" alt="High level infrastructure scheme" style="width: 80%"/>
 
 Plugin infrastructure consists of 17 microservices that are wrapped into the docker
 containers/images. These images are hosted in the Stripo Docker Hub Repository to
 which partners can get the read-only access (just to be able to download the images with
-needed particular versions) once they’re on Enterprise pricing plan and intend to host Plugin
+needed particular versions) once they’re on the Enterprise pricing plan and intend to host Plugin
 Backend on their server.
-Some microservices have their own Databases (PostgreSQL) that may be deployed
-in any place. The connection between services and their DB are specified via properties.
-Infrastructure also provides you with the ability to send logs from every microservice to ELK
-stack. ELK stack can be also deployed in any place. The url to ELK can be specified via properties.
+Some microservices have their own databases (PostgreSQL) that can be deployed
+anywhere. The connection between services and their DB is specified via properties.
+Infrastructure also provides you with the ability to send logs from every microservice to the ELK
+stack. The ELK stack can also be deployed anywhere. The URL to ELK can be specified via properties.
 
 The list of actual microservices and their responsibilities are described in the table below:
 
@@ -38,7 +38,7 @@ The list of actual microservices and their responsibilities are described in the
  | stripe-html-gen-service             | Used to parse external sites and extract information for smart-modules                                 | false             |
  | stripo-security-service             | Used to check external URLs for security (protocol, internal AWS IPs)                                  | false             |
  | stripe-html-cleaner-service         | Used to compile HTML and CSS from Stripo editor to clean compressed HTML ready to be sent to customers | false             |
- | amp-validator-service               | Used to check is AMP HTML code valid                                                                   | false             |
+ | amp-validator-service               | Used to check if AMP HTML code is valid                                                                   | false             |
 
 ## Communication between microservices
 <img src="docs/microservices_overview.png" alt="Microservices communication scheme" style="width: 80%"/>
@@ -70,12 +70,12 @@ helm  (https://helm.sh/docs/intro/install/)
  | 13  | Run on minikube                                                      | [Video](https://kub.stripocdn.email/content/materials/git/minikube.mp4)               |
 
 ### Personal secret key
-Personal secret key is used to download docker images from Stripo docker hub.
+A personal secret key is used to download docker images from the Stripo docker hub.
 Put secret key (docker-hub-secret.yaml) to ```./secrets``` folder
 
 ### Logging
 #### ELK stack
-Stripo logs can be collected with ELK stack. To configure logging do the following steps: 
+Stripo logs can be collected with ELK stack. To configure logging, do the following steps: 
 1. Deploy ELK stack
 2. Set env variables LOGSTASH_HOST and LOGSTASH_PORT in yaml files.
    Files to change:
@@ -96,7 +96,7 @@ Stripo logs can be collected with ELK stack. To configure logging do the followi
 - ```stripo-timer-api.yaml ```
 
 #### Log level
-Default log level is INFO.
+The default log level is INFO.
 You can change the log level for each microservice in yaml file settings:
 ```
 log.properties: |
@@ -106,11 +106,11 @@ log.properties: |
 ### Docker images tags
 Stripo continuously releases new features and bug fixes.
 You will be regularly notified with the list of release image tags and release notes.
-To apply new docker images you need to replace
+To apply new docker images, you need to replace
 ```
 tag: "latest"
 ```
-with the actual tag version in yaml files.
+With the actual tag version in yaml files.
 
 Files to change:
 - ```amp-validator-service.yaml```
@@ -131,7 +131,7 @@ Files to change:
 - ```stripo-security-service.yaml ```
 - ```stripo-timer-api.yaml ```
 
-To apply the new tag version run the following command:
+To apply the new tag version, run the following command:
 ```
 ./update.sh amp-validator-service
 ./update.sh patches-service
@@ -156,13 +156,13 @@ To apply the new tag version run the following command:
 
 | Column            | Description                                                                                                                                                              |
 |-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| name              | The name of your application. It will not be displayed elsewhere, but may be used for your convenience to distinguish the records within table                           |
+| name              | The name of your application. It will not be displayed elsewhere but may be used for your convenience to distinguish the records within table                           |
 | plugin_id         | A unique GUID of your application without hyphens. You are welcome to use [this](https://www.guidgenerator.com/online-guid-generator.aspx) service to generate a new one |
 | secret_key        | A unique GUID of your secret key without hyphens. You are welcome to use [this](https://www.guidgenerator.com/online-guid-generator.aspx) service to generate a new one  |
 | status            | The status of the application. It always should be "ACTIVE"                                                                                                              |
 | config            | The JSON config of this application. Described in ```./resources/plugin_config.json```                                                                                   |
 | subscription_type | The pricing plan of the application. In your case, it is always "ENTERPRISE"                                                                                             |
-| sub_domain        | Create here any string value that will be used as a subdomain for the links with uploaded images. Works only if you have configured Stripo storage for image hosting     |
+| sub_domain        | Create any string value here that will be used as a subdomain for the links with uploaded images. Works only if you have configured Stripo storage for image hosting     |
 
 
 ### Migration Guide
