@@ -24,11 +24,11 @@ env:
 #  - name: LOGSTASH_PORT
 #    value: "5008"
 
-resources: 
+resources:.
   limits:
-    memory: 128Mi
+    memory: 600Mi
   requests:
-    memory: 128Mi
+    memory: 500Mi
 
 nodeSelector: {}
 
