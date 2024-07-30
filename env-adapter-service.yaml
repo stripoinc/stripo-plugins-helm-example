@@ -1,0 +1,70 @@
+image:
+  repository: stripo/env-adapter-service
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+nameOverride: "env-adapter-service"
+
+resources:
+  limits:
+    memory: 400Mi
+    cpu: 1000m
+  requests:
+    memory: 100Mi
+    cpu: 150m
+
+livenessProbe:
+  initialDelaySeconds: 1
+  periodSeconds: 10
+  failureThreshold: 2
+
+DeadlineSeconds: 60
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetMemoryUtilizationPercentage: 80
+  targetCPUUtilizationPercentage: 80
+
+env:
+  - name: APPNAME
+    value: env-adapter-service
+  - name: ENV
+    value: PLUGINS
+  - name: PROFILE
+    value: PLUGINS
+# Depends on cpu limit. 1 for 1000m
+  - name: GOMAXPROCS
+    value: 1
+# Depends on memory limit (~90%). 300 for 400m
+  - name: GOMEMLIMIT
+    value: 300MiB
+  - name: GOGC
+    value: 50
+  - name: NATS_URL
+    value: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
+  - name: NATS_USER
+    value: nats_user
+  - name: NATS_PASSWORD
+    value: nats_password
+
+# In case of Amazon ElastiCache is used instead of standalone redis instance
+#  - name: REDIS_ADDRESS
+#    value: example-redis-001.euw1.cache.amazonaws.com:6379,example-redis-002.euw1.cache.amazonaws.com:6379
+# In case of standalone redis instance is used instead of Amazon ElastiCache
+  - name: REDIS_HOST
+    value: redis-master
+  - name: REDIS_PORT
+    value: 6379
+  - name: REDIS_PASSWORD
+    value: secret
+
+  - name: PLUGIN_AUTH_JWT_SECRET_KEY
+    value: secret
+
+  #  - name: LOGSTASH_HOST
+  #    value: logstash
+  #  - name: LOGSTASH_PORT
+  #    value: "5008"
