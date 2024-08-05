@@ -37,11 +37,11 @@ env:
     value: PLUGINS
 # Depends on cpu limit. 1 for 1200m
   - name: GOMAXPROCS
-    value: 1
+    value: "1"
   - name: GOGC
-    value: 50
+    value: "50"
   - name: NATS_URL
-    value: nats://example-nats-1.svc.stripo.email:4222,nats://example-nats-2.svc.stripo.email:4222,nats://example-nats-3.svc.stripo.email:4222
+    value: "nats://example-nats-1.svc.stripo.email:4222,nats://example-nats-2.svc.stripo.email:4222,nats://example-nats-3.svc.stripo.email:4222"
   - name: NATS_USER
     value: nats_user
   - name: NATS_PASSWORD
@@ -54,7 +54,7 @@ env:
   - name: REDIS_HOST
     value: redis-master
   - name: REDIS_PORT
-    value: 6379
+    value: "6379"
   - name: REDIS_PASSWORD
     value: secret
 
