@@ -38,12 +38,12 @@ env:
 
 # Depends on cpu limit. 2 for 2000m
   - name: GOMAXPROCS
-    value: 2
+    value: "2"
 # Depends on memory limit (~90%). 600 for 700m
   - name: GOMEMLIMIT
     value: 600MiB
   - name: GOGC
-    value: 50
+    value: "50"
   - name: NATS_URL
     value: nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222
   - name: NATS_USER
@@ -72,7 +72,7 @@ env:
   - name: REDIS_HOST
     value: redis-master
   - name: REDIS_PORT
-    value: 6379
+    value: "6379"
   - name: REDIS_PASSWORD
     value: secret
 
