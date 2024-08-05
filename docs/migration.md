@@ -2,6 +2,12 @@
 ***
 This document is meant to help you migrate your Stripo environment to the latest release version.
 
+## Upgrade to the 1.125.0 Version
+The following settings have been added to limit the request **html** and **css** fields length to stripe-html-cleaner-service to /compress method:
+
+* **email.validation.css-max-size**=5000000
+* **email.validation.html-max-size**=9000000
+
 ## Upgrade to the 1.104.0 Version
 The following settings have been added to limit the requests from only allowed domains to stripe-html-cleaner-service to /compress method:
 
