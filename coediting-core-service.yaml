@@ -1,7 +1,7 @@
 image:
   repository: stripo/coediting-core-service
   pullPolicy: IfNotPresent
-  # Overrides the image tag with the latest release tag value
+  # Override the image tag with the release tag value
   tag: "latest"
 
 nameOverride: "coediting-core-service"
@@ -28,64 +28,46 @@ autoscaling:
   targetMemoryUtilizationPercentage: 80
   targetCPUUtilizationPercentage: 80
 
-env:
-  - name: APPNAME
-    value: coediting-core-service
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
-
-# Depends on cpu limit. 2 for 2000m
-  - name: GOMAXPROCS
-    value: "2"
-# Depends on memory limit (~90%). 600 for 700m
-  - name: GOMEMLIMIT
-    value: 600MiB
-  - name: GOGC
-    value: "50"
-  - name: NATS_URL
-    value: nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222
-  - name: NATS_USER
-    value: nats_user
-  - name: NATS_PASSWORD
-    value: nats_password
-  - name: COCKROACH_CONNECTION_STRING
-    value: "postgresql://db_user:db_password@db_host:26257/%s"
-  - name: COCKROACH_DB
-    value: stripo_coediting_db
-  - name: HTTP_CORS_ALLOWED_ORIGINS
-    value: *
-  - name: RATE_LIMITER_WEBSOCKET_MSGS_DEFAULT_JSON_CONFIG
-    value: "{\"limit\": 1080, \"duration_seconds\": 60, \"burst\": 10}"
-  - name: RATE_LIMITER_WEBSOCKET_MSGS_CURSOR_JSON_CONFIG
-    value: "{\"limit\": 18000, \"duration_seconds\": 60, \"burst\": 100}"
-  - name: RATE_LIMITER_HTTP_JSON_CONFIG_DEFAULT
-    value: "{\"limit\": 90, \"duration_seconds\": 60, \"burst\": 5}"
-  - name: RATE_LIMITER_HTTP_JSON_CONFIG
-    value: "{\"EmailModelCompilationV1\":{\"limit\": 10, \"duration_seconds\": 60, \"burst\": 1}, \"EmailModelHtmlCssV1\":{\"limit\": 10, \"duration_seconds\": 60, \"burst\": 1}}"
-
-# In case of Amazon ElastiCache is used instead of standalone redis instance
-#  - name: REDIS_ADDRESS
-#    value: example-redis-001.euw1.cache.amazonaws.com:6379,example-redis-002.euw1.cache.amazonaws.com:6379
-# In case of standalone redis instance is used instead of Amazon ElastiCache
-  - name: REDIS_HOST
-    value: redis-master
-  - name: REDIS_PORT
-    value: "6379"
-  - name: REDIS_PASSWORD
-    value: secret
-
-  - name: CHANGED_EMAIL_NOTIFICATION_SEND_DEBOUNCE_TIME  # debounce for change email notifications
-    value: "3s"
-  - name: DIRTY_MODEL_PRIVATE_ENDPOINT_USERNAME
-    value: coeditingUser
-  - name: DIRTY_MODEL_PRIVATE_ENDPOINT_PASSWORD
-    value: secret
-  #  - name: LOGSTASH_HOST
-  #    value: logstash
-  #  - name: LOGSTASH_PORT
-  #    value: "5008"
+settings:
+  profile: PLUGINS
+  accessControlAllowOrigin: *
+  changedEmailNotificationDebounceTime: "3s"
+  auth:
+    base64:
+      htmlCssV1Request:
+        username: coeditingUser
+        password: secret
+  golang:
+    # Depends on cpu limit. 2 for 2000m
+    goMaxProcs: "2"
+    # Depends on memory limit (~90%). 600 for 700m
+    goMemLimit: 600Mib
+  cockroachDb:
+    host: db_host
+    port: "26257"
+    username: db_user
+    password: db_password
+    databaseName: stripo_coediting_db
+  nats:
+    url: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
+    user: nats_user
+    password: nats_password
+  redis:
+    #    clusterUrl: "example-redis-001.euw1.cache.amazonaws.com:6379,example-redis-002.euw1.cache.amazonaws.com:6379"
+    host: redis-master
+    port: "6379"
+    password: secret
+  rateLimits:
+    ws:
+      defaultMessage: "{\"limit\": 1080, \"duration_seconds\": 60, \"burst\": 10}"
+      cursorMessage: "{\"limit\": 18000, \"duration_seconds\": 60, \"burst\": 100}"
+    rest:
+      defaultRequest: "{\"limit\": 90, \"duration_seconds\": 60, \"burst\": 5}"
+      compileRequest: "{\"limit\": 10, \"duration_seconds\": 60, \"burst\": 1}"
+      htmlCssV1Request: "{\"limit\": 10, \"duration_seconds\": 60, \"burst\": 1}}"
+#  logstash:
+#    host: logstash
+#    port: "5008"
 
 ingress:
   enabled: true
