@@ -20,6 +20,9 @@ function install_or_skip {
             if [ $service_name  == "redis" ]; then
                 helm install $service_name bitnami/$service_name -f $service_name.yaml --namespace $NAMESPACE
                 kubectl rollout status statefulset/redis-master --namespace=$NAMESPACE
+            elif [ "$service_name" = "coediting-core-service" ] || [ "$service_name" = "env-adapter-service" ] || [ "$service_name" = "merge-service" ]; then
+                helm install $service_name stripo/go-template-service -f $service_name.yaml --namespace $NAMESPACE
+                kubectl rollout status deploy/$service_name --namespace=$NAMESPACE
             else
                 helm install $service_name stripo/$service_name -f $service_name.yaml --namespace $NAMESPACE
                 kubectl rollout status deploy/$service_name --namespace=$NAMESPACE
