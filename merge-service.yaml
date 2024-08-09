@@ -33,6 +33,8 @@ settings:
   golang:
     # Depends on cpu limit. 1 for 1000m
     goMaxProcs: "1"
+    # Depends on memory limit (~90%). 1200 for 1300m
+    goMemLimit: 1200MiB
   nats:
     url: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
     user: nats_user
