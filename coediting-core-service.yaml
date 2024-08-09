@@ -64,7 +64,7 @@ settings:
     rest:
       defaultRequest: "{\"limit\": 90, \"duration_seconds\": 60, \"burst\": 5}"
       compileRequest: "{\"limit\": 10, \"duration_seconds\": 60, \"burst\": 1}"
-      htmlCssV1Request: "{\"limit\": 10, \"duration_seconds\": 60, \"burst\": 1}}"
+      htmlCssV1Request: "{\"limit\": 10, \"duration_seconds\": 60, \"burst\": 1}"
 #  logstash:
 #    host: logstash
 #    port: "5008"
