@@ -30,7 +30,7 @@ autoscaling:
 
 settings:
   profile: PLUGINS
-  accessControlAllowOrigin: *
+  accessControlAllowOrigin: "*"
   changedEmailNotificationDebounceTime: "3s"
   auth:
     base64:
