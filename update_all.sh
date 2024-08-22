@@ -21,7 +21,11 @@ function update {
         exit 1
     fi
     echo "-= Start update $service_name =-"
-    helm upgrade --install $service_name stripo/$service_name -f $service_name.yaml --namespace $NAMESPACE
+    if [ "$service_name" = "coediting-core-service" ] || [ "$service_name" = "env-adapter-service" ] || [ "$service_name" = "merge-service" ]; then
+      helm upgrade --install $service_name stripo/go-template-service -f $service_name.yaml --namespace $NAMESPACE
+    else
+      helm upgrade --install $service_name stripo/$service_name -f $service_name.yaml --namespace $NAMESPACE
+    fi
     kubectl rollout restart deploy/$service_name --namespace=$NAMESPACE
     echo -ne '###########################(100%)\r'
     echo "========================================"

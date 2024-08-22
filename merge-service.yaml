@@ -1,0 +1,49 @@
+image:
+  repository: stripo/merge-service
+  pullPolicy: IfNotPresent
+  # Override the image tag with the release tag value
+  tag: "latest"
+
+nameOverride: "merge-service"
+
+resources:
+  limits:
+    memory: 1300Mi
+    cpu: 1200m
+  requests:
+    memory: 1000Mi
+    cpu: 1200m
+
+livenessProbe:
+  initialDelaySeconds: 1
+  periodSeconds: 10
+  failureThreshold: 2
+
+DeadlineSeconds: 60
+
+autoscaling:
+  enabled: true
+  minReplicas: 5
+  maxReplicas: 8
+  targetMemoryUtilizationPercentage: 80
+  targetCPUUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+  golang:
+    # Depends on cpu limit. 1 for 1000m
+    goMaxProcs: "1"
+    # Depends on memory limit (~90%). 1200 for 1300m
+    goMemLimit: 1200MiB
+  nats:
+    url: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
+    user: nats_user
+    password: nats_password
+  redis:
+    #    clusterUrl: "example-redis-001.euw1.cache.amazonaws.com:6379,example-redis-002.euw1.cache.amazonaws.com:6379"
+    host: redis-master
+    port: "6379"
+    password: secret
+#  logstash:
+#    host: logstash
+#    port: "5008"

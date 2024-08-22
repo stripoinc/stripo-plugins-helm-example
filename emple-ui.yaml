@@ -14,14 +14,15 @@ service:
 
 ingress:
   enabled: true
-  className: ""
+  className: "nginx"
   annotations:
-    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
   hosts:
-    - host: static.plugins.info
+    - host: plugins.example.com
       paths:
-        - path: /
-          pathType: ImplementationSpecific
+        - path: /static/(.*)
+          pathType: Prefix
 
 resources:
   limits:

@@ -1,0 +1,52 @@
+image:
+  repository: stripo/env-adapter-service
+  pullPolicy: IfNotPresent
+  # Override the image tag with the release tag value
+  tag: "latest"
+
+nameOverride: "env-adapter-service"
+
+resources:
+  limits:
+    memory: 400Mi
+    cpu: 1000m
+  requests:
+    memory: 100Mi
+    cpu: 150m
+
+livenessProbe:
+  initialDelaySeconds: 1
+  periodSeconds: 10
+  failureThreshold: 2
+
+DeadlineSeconds: 60
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetMemoryUtilizationPercentage: 80
+  targetCPUUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+  auth:
+    jwt:
+      secret: secret
+  golang:
+    # Depends on cpu limit. 1 for 1000m
+    goMaxProcs: "1"
+    # Depends on memory limit (~90%). 300 for 400m
+    goMemLimit: 300MiB
+  nats:
+    url: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
+    user: nats_user
+    password: nats_password
+  redis:
+#    clusterUrl: "example-redis-001.euw1.cache.amazonaws.com:6379,example-redis-002.euw1.cache.amazonaws.com:6379"
+    host: redis-master
+    port: "6379"
+    password: secret
+#  logstash:
+#    host: logstash
+#    port: "5008"
