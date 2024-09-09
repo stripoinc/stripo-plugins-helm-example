@@ -1,44 +1,33 @@
-replicaCount: 1
-
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag with the latest release tag value
   tag: "latest"
 
-imagePullSecrets:
-  - name: dockerhub
-
-service:
-  type: ClusterIP
-  port: 8080
-
 resources:
   limits:
-    memory: 1536Mi
+    memory: 1200Mi
+    cpu: 350m
   requests:
-    memory: 1536Mi
+    memory: 1200Mi
+    cpu: 200m
 
-nodeSelector: {}
+replicaCount: 1
 
-tolerations: []
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
-affinity: {}
+settings:
+  profile: PLUGINS
 
 env: 
-  - name: APPNAME
-    value: stripe-html-gen-service
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
-  - name: SPRING_CONFIG_NAME
-    value: application,jdbc,log,base
-  - name: SPRING_CONFIG_LOCATION
-    value: file:///config/
   - name: JVM_MEMORY_OPTS
     value: -Dspring.cloud.config.enabled=false -Daws.secretsmanager.enabled=false
   - name: JAVA_TOOL_OPTIONS
-    value: -Xss256k -Xms400m -Xmx512m -XX:ReservedCodeCacheSize=128M
+    value: -Xss256k -Xms400m -Xmx512m -XX:MaxMetaspaceSize=256m -XX:-UseGCOverheadLimit -Djava.net.preferIPv4Stack=true
 #  - name: LOGSTASH_HOST
 #    value: logstash
 #  - name: LOGSTASH_PORT
@@ -48,12 +37,10 @@ configmap:
   enabled: true
   extraScrapeConfigs:
     application.properties: |
+      logging.level.root=INFO
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_html_gen
       spring.datasource.username=example
       spring.datasource.password=secret
-      auth.swaggerUsername=stripe-swagger-user
-      auth.swaggerPassword=secret
-      management.tracing.sampling.probability=0
-      management.zipkin.tracing.endpoint=http://localhost:9411/api/v2/spans
-    log.properties: |
-      logging.level.root=INFO
+      stripo.security.service.baseUrl=http://stripo-security-service:8080
+      stripo.security.service.passwordV2=secret
+      rate.limit.enabled=false

@@ -8,22 +8,15 @@ nameOverride: "merge-service"
 
 resources:
   limits:
-    memory: 1300Mi
+    memory: 2000Mi
     cpu: 1200m
   requests:
-    memory: 1000Mi
+    memory: 2000Mi
     cpu: 1200m
-
-livenessProbe:
-  initialDelaySeconds: 1
-  periodSeconds: 10
-  failureThreshold: 2
-
-DeadlineSeconds: 60
 
 autoscaling:
   enabled: true
-  minReplicas: 5
+  minReplicas: 3
   maxReplicas: 8
   targetMemoryUtilizationPercentage: 80
   targetCPUUtilizationPercentage: 80

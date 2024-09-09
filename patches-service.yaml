@@ -1,56 +1,32 @@
-replicaCount: 1
-
-DeadlineSeconds: 260
-
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag with the latest release tag value
   tag: "latest"
 
-imagePullSecrets: 
-  - name: dockerhub
-
-service:
-  type: ClusterIP
-  port: 8080
-
 resources:
   limits:
-    memory: 256Mi
+    memory: 1000Mi
+    cpu: 500m
   requests:
-    memory: 256Mi
+    memory: 1000Mi
+    cpu: 250m
 
-nodeSelector: {}
+replicaCount: 1
 
-tolerations: []
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
-affinity: {}
+settings:
+  profile: PLUGINS
 
 env: 
-  - name: APPNAME
-    value: patches-service
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
-  - name: NODE_MEMORY
-    value: "256"
+  - name: NODE_OPTIONS
+    value: "--max-old-space-size=900"
 #  - name: LOGSTASH_HOST
 #    value: logstash
 #  - name: LOGSTASH_PORT
 #    value: "5008"
-
-configmap:
-  enabled: true
-  extraScrapeConfigs:
-    default.json: |
-      {
-        "auth": {
-          "username": "",
-          "password": ""
-        },
-        "server": {
-          "port": 8080
-        },
-        "maxRequestSize": "10mb"
-      }

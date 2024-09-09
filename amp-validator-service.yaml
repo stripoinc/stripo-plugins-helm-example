@@ -1,39 +1,31 @@
-replicaCount: 1
-
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag with the latest release tag value
   tag: "latest"
 
-imagePullSecrets: 
-  - name: dockerhub
+resources:
+  limits:
+    memory: 400Mi
+    cpu: 200m
+  requests:
+    memory: 100Mi
+    cpu: 100m
 
-service:
-  type: ClusterIP
-  port: 8080
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
 
 env: 
-  - name: APPNAME
-    value: amp-validator-service
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
 #  - name: LOGSTASH_HOST
 #    value: logstash
 #  - name: LOGSTASH_PORT
 #    value: "5008"
 
-resources:
-  limits:
-    memory: 600Mi
-  requests:
-    memory: 500Mi
-
-nodeSelector: {}
-
-configmap:
-  enabled: true
-  extraScrapeConfigs:
-    application.properties: |
-      maxRequestSize=10mb

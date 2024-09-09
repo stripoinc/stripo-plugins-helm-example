@@ -1,66 +1,46 @@
-replicaCount: 1
-
-DeadlineSeconds: 120
-
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-imagePullSecrets: 
-  - name: dockerhub
-
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: false
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-service:
-  type: ClusterIP
-  port: 8080
-
 resources:
   limits:
-    memory: 1Gi
+    memory: 1000Mi
+    cpu: 300m
   requests:
-    memory: 1Gi
+    memory: 1000Mi
+    cpu: 200m
 
-nodeSelector: {}
+# In case of autoscaling is disabled
+#replicaCount: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
 
 env: 
-  - name: APPNAME
-    value: stripo-timer-api
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
-  - name: SPRING_PROFILES_ACTIVE
-    value: plugin-live
-  - name: SPRING_CONFIG_NAME
-    value: application,jdbc,log,base
-  - name: SPRING_CONFIG_LOCATION
-    value: file:///config/
   - name: JVM_MEMORY_OPTS
     value: -Dspring.cloud.config.enabled=false -Daws.secretsmanager.enabled=false
   - name: JAVA_TOOL_OPTIONS
-    value: -Xss256k -Xms256m -Xmx400m -XX:ReservedCodeCacheSize=128M
+    value: -Xss256k -Xms256m -Xmx512m -XX:ReservedCodeCacheSize=128M
+  - name: PLUGIN_PATCHES
+    value: "true"
 
 configmap:
   enabled: true
   extraScrapeConfigs:
     application.properties: |
+      logging.level.root=INFO
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_timers
       spring.datasource.username=example
       spring.datasource.password=secret
       timer.url=http://countdowntimer:80/api/
       timer.username=Admin
       timer.password=secret
-      management.tracing.sampling.probability=0
-      management.zipkin.tracing.endpoint=http://localhost:9411/api/v2/spans
-    log.properties: |
-      logging.level.root=INFO
+      spring.security.user.passwordV2=secret

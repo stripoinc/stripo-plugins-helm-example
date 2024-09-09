@@ -14,13 +14,6 @@ resources:
     memory: 300Mi
     cpu: 1000m
 
-livenessProbe:
-  initialDelaySeconds: 1
-  periodSeconds: 10
-  failureThreshold: 2
-
-DeadlineSeconds: 60
-
 autoscaling:
   enabled: true
   minReplicas: 2

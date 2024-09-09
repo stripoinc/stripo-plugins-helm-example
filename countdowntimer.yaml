@@ -1,26 +1,7 @@
-replicaCount: 1
-
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
-
-imagePullSecrets: 
-  - name: dockerhub
-
-
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: false
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-service:
-  type: ClusterIP
-  port: 80
 
 ingress:
   enabled: true
@@ -40,24 +21,29 @@ resources:
   requests:
     memory: 1Gi
 
-nodeSelector: {}
+replicaCount: 1
 
-env: 
-  - name: APPNAME
-    value: countdowntimer
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
-  - name: PLUGIN_PATCHES
-    value: "true"
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
 
 configmap:
   enabled: true
   extraScrapeConfigs:
     config.yaml: |
       HOST: countdowntimer.stripo
-      SECRET_KEY: secret
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: countdowntimer
+      DB_USER: example
+      DB_PASSWORD: secret
+      USE_HTTPS=true
       FONT_UPLOAD_FOLDER: '/usr/local/countdowntimer/fonts'
       GIF_FOLDER: '/opt/sources'
       PROD: true
@@ -65,11 +51,6 @@ configmap:
       UPLOAD_URL: '/api-uploads/'
       CACHE_LIFETIME: 30
       UPLOAD_FOLDER: '/opt/uploads'
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_NAME: countdowntimer
-      DB_USER: example
-      DB_PASSWORD: secret
 
 volume:
   enabled: true

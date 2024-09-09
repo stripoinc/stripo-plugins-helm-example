@@ -1,16 +1,20 @@
-replicaCount: 1
-
 image:
   pullPolicy: IfNotPresent
   # Overrides the image tag with the latest release tag value
   tag: "latest"
 
-imagePullSecrets: 
-  - name: dockerhub
+resources:
+  limits:
+    memory: 100Mi
+    cpu: 50m
+  requests:
+    memory: 30Mi
+    cpu: 10m
 
-service:
-  type: ClusterIP
-  port: 8080
+replicaCount: 1
+
+settings:
+  profile: PLUGINS
 
 ingress:
   enabled: true
@@ -23,25 +27,3 @@ ingress:
       paths:
         - path: /static/(.*)
           pathType: Prefix
-
-resources:
-  limits:
-    memory: 128Mi
-  requests:
-    memory: 128Mi
-
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
-
-
-env: 
-  - name: APPNAME
-    value: emple-ui
-  - name: ENV
-    value: PLUGINS
-  - name: PROFILE
-    value: PLUGINS
