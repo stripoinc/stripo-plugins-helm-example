@@ -39,6 +39,8 @@ settings:
     username: example
     password: secret
     databaseName: countdowntimer
+    connectionMinPoolSize: 5
+    connectionMaxPoolSize: 10
 
 volume:
   enabled: true
