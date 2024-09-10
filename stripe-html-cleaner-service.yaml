@@ -39,4 +39,3 @@ configmap:
       logging.level.root=INFO
       amp.validator.active=true
       amp.validator.url=http://amp-validator-service:8080
-      amp.validator.password=secret
