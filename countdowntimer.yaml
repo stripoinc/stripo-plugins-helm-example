@@ -32,7 +32,6 @@ autoscaling:
 settings:
   profile: PLUGINS
   host: countdowntimer.stripo
-  jwtSecretKey: secret
   postgresDb:
     host: postgres
     port: "5432"
