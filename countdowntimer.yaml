@@ -16,10 +16,9 @@ ingress:
           pathType: Prefix
 
 resources:
-  limits:
-    memory: 2Gi
   requests:
     memory: 1Gi
+    cpu: 1000m
 
 replicaCount: 1
 
@@ -32,29 +31,18 @@ autoscaling:
 
 settings:
   profile: PLUGINS
-
-configmap:
-  enabled: true
-  extraScrapeConfigs:
-    config.yaml: |
-      HOST: countdowntimer.stripo
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_NAME: countdowntimer
-      DB_USER: example
-      DB_PASSWORD: secret
-      USE_HTTPS=true
-      FONT_UPLOAD_FOLDER: '/usr/local/countdowntimer/fonts'
-      GIF_FOLDER: '/opt/sources'
-      PROD: true
-      GIF_URL: '/api-files/'
-      UPLOAD_URL: '/api-uploads/'
-      CACHE_LIFETIME: 30
-      UPLOAD_FOLDER: '/opt/uploads'
+  host: countdowntimer.stripo
+  jwtSecretKey: secret
+  postgresDb:
+    host: postgres
+    port: "5432"
+    username: example
+    password: secret
+    databaseName: countdowntimer
 
 volume:
   enabled: true
   storageClass:
     enabled: false
-    className: gp2 # AWS default storage class
+    className: gp2
   size: 10Gi

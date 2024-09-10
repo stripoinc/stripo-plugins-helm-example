@@ -6,7 +6,7 @@ image:
 resources:
   limits:
     memory: 500Mi
-    cpu: 100m
+    cpu: 500m
   requests:
     memory: 500Mi
     cpu: 10m
@@ -24,10 +24,8 @@ settings:
   profile: PLUGINS
 
 env: 
-  - name: JVM_MEMORY_OPTS
-    value: -Dspring.cloud.config.enabled=false -Daws.secretsmanager.enabled=false
   - name: JAVA_TOOL_OPTIONS
-    value: -Xss128k -Xms128m -Xmx256m -XX:ReservedCodeCacheSize=128M
+    value: -Xss256k -Xms128m -Xmx256m -XX:ReservedCodeCacheSize=128M
 #  - name: LOGSTASH_HOST
 #    value: logstash
 #  - name: LOGSTASH_PORT

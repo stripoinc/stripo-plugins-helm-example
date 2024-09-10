@@ -158,6 +158,11 @@
     "username":"username",
     "password":"userpassword"
   },
+  "ai": {
+    "openAiApiKey": "", \\ OpenAI API Key
+    "textBlockAiEnabled": true, \\ option activates/disables AI for Text block
+    "smartModuleAiEnabled": true \\ option activates/disables AI for Smart modules
+  },
   "mergeTagsEnabled":true, \\ option activates/disables the ability to see and use the merge tags within editor https://stripo.email/plugin-api/#merge-tags
   "specialLinksEnabled":true, \\ option activates/disables the ability to see and use the special links within editor https://stripo.email/plugin-api/#special-links
   "customFontsEnabled":true, \\ option activates/disables the ability to see and use custom fonts within editor https://stripo.email/plugin-api/#fonts-management
