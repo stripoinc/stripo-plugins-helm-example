@@ -68,7 +68,7 @@ The Stripo ecosystem consists of several key components, each playing a crucial 
 - **Amazon ElastiCache**:  
   Used to store co-editing session information, enabling real-time collaboration by efficiently caching session data.
 
-![Architecture Diagram](docs/system_architecture.png)
+![Architecture Diagram](docs/assets/system_architecture.png)
 
 ## Microservices Architecture Overview
 
@@ -113,7 +113,7 @@ The table below outlines the current microservices, their roles, and their requi
 - **Public (Web)**: Indicates whether the service is accessible via the web.
 - **Required for V1/V2**: Specifies if the service is mandatory for plugin versions 1 or 2.
 
-![Microservices Diagram](docs/microservices.png)
+![Microservices Diagram](docs/assets/microservices.png)
 
 ## Prerequisites
 
