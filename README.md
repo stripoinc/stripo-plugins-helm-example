@@ -340,9 +340,24 @@ timer.password=secret
 
 Enhance the `configmap` sections of the Helm charts for each microservice located in `./charts/*.yaml`. Add the necessary properties to include the actual database settings and secret keys.
 
-### Step 6: Configure Stripo docker hub access
+### Step 6: Configure Stripo Docker Hub Access
 
-???
+1. **Request Access to Stripo Docker Hub Repository**: Contact the Stripo team and request them to add your Docker Hub account to the Stripo Docker Hub repository.
+
+2. **Login to Docker Hub**: Ensure you are logged into your Docker Hub account.
+
+3. **Generate Base64 Hash from Docker Configuration**:
+   - Navigate to your Docker configuration directory:
+     ```shell
+     cd ~/.docker
+     ```
+   - Create a Base64 hash of your `config.json` file:
+     ```shell
+     cat config.json | base64
+     ```
+
+4. **Update Secret Token**:
+   - Replace `{{ YOUR_SECRET_TOKEN_SHOULD_BE_HERE }}` inside `./resources/secrets/docker-hub-secret.yaml` with the Base64 hash obtained from the previous step.
 
 ### Step 7: Configure Logging
 
