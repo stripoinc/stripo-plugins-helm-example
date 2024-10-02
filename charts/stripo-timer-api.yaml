@@ -36,8 +36,8 @@ configmap:
     application.properties: |
       logging.level.root=INFO
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_timers
-      spring.datasource.username=example
-      spring.datasource.password=secret
+      spring.datasource.username=user_timers
+      spring.datasource.password=password_timers
       timer.url=http://countdowntimer:80/api/
       timer.username=Admin
       timer.password=secret

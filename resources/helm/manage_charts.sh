@@ -54,7 +54,7 @@ helm repo update stripo
 kubectl get namespace "$NAMESPACE" || kubectl create namespace "$NAMESPACE"
 
 # Apply DockerHub secret
-kubectl apply -f ./..secrets/docker-hub-secret.yaml -n "$NAMESPACE"
+kubectl apply -f ./../secrets/docker-hub-secret.yaml -n "$NAMESPACE"
 check_result
 
 # List of services to install or update

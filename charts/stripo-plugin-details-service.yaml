@@ -38,7 +38,7 @@ configmap:
     application.properties: |
       logging.level.root=INFO
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_plugin_details
-      spring.datasource.username=example
-      spring.datasource.password=secret
+      spring.datasource.username=user_plugin_details
+      spring.datasource.password=password_plugin_details
       stripo.security.service.baseUrl=http://stripo-security-service:8080
       stripo.security.service.passwordV2=secret

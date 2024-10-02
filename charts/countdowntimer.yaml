@@ -35,8 +35,8 @@ settings:
   postgresDb:
     host: postgres
     port: "5432"
-    username: example
-    password: secret
+    username: user_countdowntimer
+    password: password_countdowntimer
     databaseName: countdowntimer
     connectionMinPoolSize: 5
     connectionMaxPoolSize: 10

@@ -36,7 +36,7 @@ configmap:
   extraScrapeConfigs:
     application.properties: |
       spring.datasource.url=jdbc:postgresql://postgres:5432/ai_service
-      spring.datasource.username=example
-      spring.datasource.password=secret
+      spring.datasource.username=user_ai_service
+      spring.datasource.password=password_ai_service
       chat-gpt.model=gpt-4o
       chat-gpt.temperature=1.0

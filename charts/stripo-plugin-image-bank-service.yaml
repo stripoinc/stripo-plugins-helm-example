@@ -37,6 +37,6 @@ configmap:
     application.properties: |
       logging.level.root=INFO
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_bank_images
-      spring.datasource.username=example
-      spring.datasource.password=secret
+      spring.datasource.username=user_bank_images
+      spring.datasource.password=password_bank_images
       plugin.service.documentsUrl=http://stripo-plugin-documents-service:8080
