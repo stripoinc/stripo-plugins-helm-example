@@ -60,10 +60,8 @@ check_result
 # List of services to install or update
 services=(
   "stripo-security-service"
-  "ai-service"
   "amp-validator-service"
   "countdowntimer"
-  "patches-service"
   "screenshot-service"
   "stripe-html-cleaner-service"
   "stripe-html-gen-service"
@@ -71,15 +69,24 @@ services=(
   "stripo-plugin-custom-blocks-service"
   "stripo-plugin-details-service"
   "stripo-plugin-documents-service"
-  "stripo-plugin-drafts-service"
   "stripo-plugin-image-bank-service"
   "stripo-plugin-proxy-service"
   "stripo-plugin-statistics-service"
   "stripo-timer-api"
+
+  #---------------------------------------------------
+  # Comment to run ONLY Stripo editor V2 microservices
+  "stripo-plugin-drafts-service"
+  "ai-service"
+  "patches-service"
+  #---------------------------------------------------
+
+  #------------------------------------------------
   # Uncomment to run Stripo editor V2 microservices
   #"coediting-core-service"
   #"env-adapter-service"
   #"merge-service"
+  #------------------------------------------------
 )
 
 # Install or update each service

@@ -383,7 +383,10 @@ image:
 ```shell
 sh ./resources/helm/manage_charts.sh <namespace>
 ```
-
+To enable Stripo editor v2, please uncomment the corresponding section in the `manage_charts.sh` file.
+```
+# Uncomment to run Stripo editor V2 microservices
+```
 ### Step 9: Configure Countdown Timer
 
 1. **Retrieve Timer Password**
@@ -433,7 +436,15 @@ timer.username=Admin
 timer.password=secret
 ```
 
+### Step 10: Configure CDN for Static Resources
 
+Stripo's static files are hosted on their servers and can be accessed via the following URL: [https://plugins.stripo.email/static/latest/stripo.js](https://plugins.stripo.email/static/latest/stripo.js). To boost the loading speed of these source files, you have the option to set up your own Content Delivery Network (CDN) and host the editor's static files there.
+
+The necessary static files for the Stripo Editor are available in Stripo's GitHub repository: [GitHub Repository](https://github.com/ardas/stripo-plugin/tree/master/Versions). To access the latest release, navigate to the folder containing the most recent editor version. This folder houses the latest release of static files. You may copy these files and save them on your server.
+
+Ensure you maintain the same directory structure as found in the repository, meaning the organization and encapsulation of the files should remain unchanged. Once you've transferred the files to your server, you need to update the URL for the `stripo.js` script from the Stripo-hosted version to your server's location. For example: `https://your-server.com/path-to-static/stripo.js`.
+
+Please note while caching these files on your server is beneficial, the `stripo.js` script itself should not be cached. This practice ensures you are always using the latest version of the script.
 
 <div style="border: 1px solid red; padding: 10px; border-left-width: 10px; background-color: #fff2f2;">
 <strong>Warning:</strong>
@@ -451,7 +462,7 @@ Stripo is not responsible for the system's functionality if this instruction is 
     ```
    with:
     ```js
-    script.src = '{SERVICE_ADDRESS}/static/stripo.js';
+    script.src = '{YOUR_CDN_ADDRESS}/stripo/stripo.js';
     ```
 3. Add these additional parameters to the plugin configuration:
     ```js
@@ -495,8 +506,12 @@ Stripo is not responsible for the system's functionality if this instruction is 
     ```
 3. Add these additional parameters to the plugin configuration:
     ```js
-    apiBaseUrl: '{SERVICE_ADDRESS}/api/v1',
-    coeditingBasePath: '{SERVICE_ADDRESS}/coediting',
+    window.Stripo.init({
+        ..., // your initialization params
+        apiBaseUrl: '{SERVICE_ADDRESS}/api/v1',
+        coeditingBasePath: '{SERVICE_ADDRESS}/coediting',
+        ...
+    });
     ```
 4. Replace the `onTokenRefreshRequest` function:
     ```js
@@ -524,6 +539,7 @@ Stripo is not responsible for the system's functionality if this instruction is 
         });
     }
     ```
+   You need to retrieve {YOUR_PLUGIN_ID} and {YOUR_SECRET_KEY} from the 'plugins' table within the `stripo-plugin-details-service` microservice database. These values are located in the 'plugin_id' and 'secret_key' columns.
 5. Open `index.html` in your browser.
 
 ## Migration Guide
