@@ -33,10 +33,10 @@ install_or_update() {
   # Install or upgrade the service
   if ! helm list --namespace="$NAMESPACE" | grep -q "$service_name"; then
     echo "-= Installing $service_name =-"
-    helm install "$service_name" "$helm_chart" -f "$service_name.yaml" --namespace "$NAMESPACE"
+    helm install "$service_name" "$helm_chart" -f "charts/$service_name.yaml" --namespace "$NAMESPACE"
   else
     echo "-= Upgrading $service_name =-"
-    helm upgrade --install "$service_name" "$helm_chart" -f "$service_name.yaml" --namespace "$NAMESPACE"
+    helm upgrade --install "$service_name" "$helm_chart" -f "charts/$service_name.yaml" --namespace "$NAMESPACE"
   fi
 
   # Wait for the deployment to complete
@@ -54,7 +54,7 @@ helm repo update stripo
 kubectl get namespace "$NAMESPACE" || kubectl create namespace "$NAMESPACE"
 
 # Apply DockerHub secret
-kubectl apply -f ./../secrets/docker-hub-secret.yaml -n "$NAMESPACE"
+kubectl apply -f ./resources/secrets/docker-hub-secret.yaml -n "$NAMESPACE"
 check_result
 
 # List of services to install or update
