@@ -20,17 +20,17 @@
 5. [Deployment Process](#deployment-process)
    - [Step 1: Create PostgreSQL Databases](#step-1-create-postgresql-databases)
    - [Step 2: Insert Required Data into the PostgreSQL Database](#step-2-insert-required-data-into-the-postgresql-database)
-      - [Plugin Configuration Parameters](#plugin-configuration-parameters)
-   - [Step 3: Configure Countdown Timer](#step-3-configure-countdown-timer)
-   - [Step 4: Configure Amazon S3 Bucket](#step-4-configure-amazon-s3-bucket)
-   - [Step 5: Update Helm Chart Configurations](#step-5-update-helm-chart-configurations)
-   - [Step 6: Configure Stripo Docker Hub Access](#step-6-configure-stripo-docker-hub-access)
-   - [Step 7: Configure Logging](#step-7-configure-logging)
-   - [Step 8: Deploy Microservices](#step-8-deploy-microservices)
-      - [Additional Steps to Configure Stripo Editor V2](#additional-steps-to-configure-stripo-editor-v2)
-         - [Step 1: Create CockroachDB Database](#step-1-create-cockroachdb-database)
-         - [Step 2: Create NATS Account](#step-2-create-nats-account)
-         - [Step 3: Create an AWS ElastiCache Cluster](#step-3-create-an-aws-elasticache-cluster)
+     - [Plugin Configuration Parameters](#plugin-configuration-parameters)
+   - [Step 3: Additional Steps to Configure Stripo Editor V2 (V2 only)](#additional-steps-to-configure-stripo-editor-v2)
+      - [Step 1: Create CockroachDB Database](#step-1-create-cockroachdb-database)
+      - [Step 2: Create NATS Account](#step-2-create-nats-account)
+      - [Step 3: Create AWS ElastiCache Cluster](#step-3-create-an-aws-elasticache-cluster)
+   - [Step 4: Configure Amazon S3 Bucket](#step-3-configure-amazon-s3-bucket)
+   - [Step 5: Update Helm Chart Configurations](#step-4-update-helm-chart-configurations)
+   - [Step 6: Configure Stripo Docker Hub Access](#step-5-configure-stripo-docker-hub-access)
+   - [Step 7: Configure Logging](#step-6-configure-logging)
+   - [Step 8: Deploy Microservices](#step-7-deploy-microservices)
+   - [Step 9: Configure Countdown Timer](#step-8-configure-countdown-timer)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -276,47 +276,20 @@ This section provides an overview of the configuration parameters for the plugin
 | `undoEnabled`                                | Boolean      | Enables undo/redo actions within the editor.                                                                                                      |
 | `versionHistoryEnabled`                      | Boolean      | Enables version history feature within the editor.                                                                                                |
 
-### Step 3: Configure Countdown Timer
+### Step 3: Additional steps to configure Stripo Editor V2 (for V2 only)
+#### Step 1: Create CockroachDB Database
+To create a CockroachDB database, please refer to the official documentation:
 
-1. **Generate password hash**  
-   Use the following commands to install the required Python dependencies and generate a password hash. Replace `${YOUR_PASSWORD}` with your actual password.
+[Official CockroachDB Documentation](https://www.cockroachlabs.com/docs/stable/)
 
-    ```shell
-    pip3 install bcrypt  # Install Python dependencies
-    python3 ./resources/countdowntimer/encode.py ${YOUR_PASSWORD}  # Generate password hash
-    ```
+Follow the step-by-step instructions to set up your database correctly.
 
-2. **Set the generated password in the `countdowntimer` service database**  
-   Run the following SQL query to update the password in the `system_user` table. Replace `${YOUR_PASSWORD_HASH}` with the generated password hash from the previous step.
+#### Step 2: Create NATS account
+To create a NATS account, please follow the official documentation provided by NATS. The official guide will walk you through the process step-by-step to ensure your account is set up correctly.
 
-    ```sql
-    UPDATE system_user SET password = '${YOUR_PASSWORD_HASH}' WHERE username = 'Admin';
-    ```
+#### Step 3. Create an AWS ElastiCache Cluster
+To create an AWS ElastiCache cluster, please refer to the official AWS documentation for detailed instructions and best practices.
 
-3. **Update the `stripo-timer-api.yaml` file**  
-   Set the newly generated password in the `stripo-timer-api.yaml` file under the `configmap`. Replace `${YOUR_PASSWORD}` with the actual password used to generate the hash.
-
-    ```bash
-    timer.username=Admin
-    timer.password=${YOUR_PASSWORD}
-    ```
-
-### Example
-
-If your password is `secret`, follow the steps below:
-
-```bash
-Generate password hash:
--> python3 encode.py secret
-<- $2b$12$QNSzmdqZB/MkTZSkiI/RlOn0n0dQABAjZFVYIeIjnvF2pz19vWmfq
-
-Run the following SQL query to update the password hash in the database:
-UPDATE system_user SET password = '$2b$12$QNSzmdqZB/MkTZSkiI/RlOn0n0dQABAjZFVYIeIjnvF2pz19vWmfq' WHERE username = 'Admin';
-
-Update the stripo-timer-api.yaml file:
-timer.username=Admin
-timer.password=secret
-```
 
 ### Step 4: Configure Amazon S3 Bucket
 
@@ -411,19 +384,56 @@ image:
 sh ./resources/helm/manage_charts.sh <namespace>
 ```
 
-### Additional steps to configure Stripo Editor V2
-#### Step 1: Create CockroachDB Database
-To create a CockroachDB database, please refer to the official documentation:
+### Step 9: Configure Countdown Timer
 
-[Official CockroachDB Documentation](https://www.cockroachlabs.com/docs/stable/)
+1. **Retrieve Timer Password**
 
-Follow the step-by-step instructions to set up your database correctly.
+   Begin by obtaining the timer password from the `stripo-timer-api.yaml` file:
 
-#### Step 2: Create NATS account
-To create a NATS account, please follow the official documentation provided by NATS. The official guide will walk you through the process step-by-step to ensure your account is set up correctly.
+   ```bash
+   timer.password=${TAKE_THIS_PASSWORD_STRING}
+   ```
 
-#### Step 3. Create an AWS ElastiCache Cluster
-To create an AWS ElastiCache cluster, please refer to the official AWS documentation for detailed instructions and best practices.
+2. **Generate Password Hash**
+
+   To generate a password hash, follow the steps below. First, install the necessary Python dependencies, then use them to create the password hash. Make sure to replace `${YOUR_PASSWORD}` with the actual password retrieved from `stripo-timer-api.yaml`:
+
+   ```shell
+   # Install Python dependencies
+   pip3 install bcrypt 
+
+   # Generate password hash
+   python3 ./resources/countdowntimer/encode.py ${YOUR_PASSWORD}
+
+3. **Update the `countdowntimer` Service Database**
+
+   With the generated password hash, update the `system_user` table in your database by executing the following SQL query. Replace `${YOUR_PASSWORD_HASH}` with the hash generated in the previous step:
+
+   ```sql
+   UPDATE system_user 
+   SET password = '${YOUR_PASSWORD_HASH}'
+   WHERE username = 'Admin';
+   ```
+
+
+### Example
+
+If your password is `secret`, follow the steps below:
+
+```bash
+Generate password hash:
+-> python3 encode.py secret
+<- $2b$12$QNSzmdqZB/MkTZSkiI/RlOn0n0dQABAjZFVYIeIjnvF2pz19vWmfq
+
+Run the following SQL query to update the password hash in the database:
+UPDATE system_user SET password = '$2b$12$QNSzmdqZB/MkTZSkiI/RlOn0n0dQABAjZFVYIeIjnvF2pz19vWmfq' WHERE username = 'Admin';
+
+Update the stripo-timer-api.yaml file:
+timer.username=Admin
+timer.password=secret
+```
+
+
 
 <div style="border: 1px solid red; padding: 10px; border-left-width: 10px; background-color: #fff2f2;">
 <strong>Warning:</strong>
