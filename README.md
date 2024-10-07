@@ -31,6 +31,7 @@
    - [Step 7: Configure Logging](#step-6-configure-logging)
    - [Step 8: Deploy Microservices](#step-7-deploy-microservices)
    - [Step 9: Configure Countdown Timer](#step-8-configure-countdown-timer)
+   - [Step 10: Configure CDN for Static Resources](#step-10-configure-cdn-for-static-resources)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -190,20 +191,7 @@ Below is a list of microservices that require individual PostgreSQL databases:
 - `stripe-html-gen-service`
 - `stripo-security-service`
 
-#### SQL Script Template for Database Creation:
-
-```sql
--- Step 1: Create the database
-CREATE DATABASE your_database_name;
-
--- Step 2: Create the user with a password
-CREATE USER your_username WITH PASSWORD 'your_password';
-
--- Step 3: Grant the user read/write access to the database
-GRANT ALL PRIVILEGES ON DATABASE your_database_name TO your_username;
-```
-
-For an example SQL script, refer to this file (./resourses/postgres/01_create_databases.sql)
+You can find the script template for database creation at: `./resources/postgres/01_create_databases.sh`.
 
 ### Step 2: Insert Required Data into the PostgreSQL Database
 
@@ -438,6 +426,7 @@ timer.password=secret
 
 ### Step 10: Configure CDN for Static Resources
 
+#### Stripo Editor V1
 Stripo's static files are hosted on their servers and can be accessed via the following URL: [https://plugins.stripo.email/static/latest/stripo.js](https://plugins.stripo.email/static/latest/stripo.js). To boost the loading speed of these source files, you have the option to set up your own Content Delivery Network (CDN) and host the editor's static files there.
 
 The necessary static files for the Stripo Editor are available in Stripo's GitHub repository: [GitHub Repository](https://github.com/ardas/stripo-plugin/tree/master/Versions). To access the latest release, navigate to the folder containing the most recent editor version. This folder houses the latest release of static files. You may copy these files and save them on your server.
@@ -445,6 +434,9 @@ The necessary static files for the Stripo Editor are available in Stripo's GitHu
 Ensure you maintain the same directory structure as found in the repository, meaning the organization and encapsulation of the files should remain unchanged. Once you've transferred the files to your server, you need to update the URL for the `stripo.js` script from the Stripo-hosted version to your server's location. For example: `https://your-server.com/path-to-static/stripo.js`.
 
 Please note while caching these files on your server is beneficial, the `stripo.js` script itself should not be cached. This practice ensures you are always using the latest version of the script.
+
+#### Stripo Editor V2
+You can find detailed instructions [here](https://plugin.stripo.email/hosting-stripo-editor-files-on-your-own-cdn).
 
 <div style="border: 1px solid red; padding: 10px; border-left-width: 10px; background-color: #fff2f2;">
 <strong>Warning:</strong>
