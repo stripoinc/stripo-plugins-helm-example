@@ -1,0 +1,42 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+resources:
+  limits:
+    memory: 750Mi
+    cpu: 500m
+  requests:
+    memory: 750Mi
+    cpu: 100m
+
+# In case of autoscaling is disabled
+#replicaCount: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms400m -Xmx512m -XX:ReservedCodeCacheSize=128M
+#  - name: LOGSTASH_HOST
+#    value: logstash
+#  - name: LOGSTASH_PORT
+#    value: "5008"
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_plugin_stats
+      spring.datasource.username=user_plugin_stats
+      spring.datasource.password=password_plugin_stats

@@ -1,74 +1,107 @@
 # Migration Guide
-***
-This document is meant to help you migrate your Stripo environment to the latest release version.
 
-## Upgrade to the 1.125.0 Version
-The following settings have been added to limit the request **html** and **css** fields length to stripe-html-cleaner-service to /compress method:
+This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
-* **email.validation.css-max-size**=5000000
-* **email.validation.html-max-size**=9000000
+<div style="border: 1px solid red; padding: 10px; border-left-width: 10px; background-color: #fff2f2;">
+<strong>Important!</strong>
+<p><b>09-Oct-2024.</b> We are excited to announce significant improvements and a comprehensive refactoring of all Helm charts and related documentation.</p>
 
-## Upgrade to the 1.104.0 Version
-The following settings have been added to limit the requests from only allowed domains to stripe-html-cleaner-service to /compress method:
+### Key Changes
 
-* **app.cors.allowedOrigins**=*
+- Comprehensive refactoring of all Helm charts.
+- Updated and enhanced documentation.
 
-## Upgrade to the 1.97.0 Version
-Docker images were moved to **stripo** organization on docker hub
+### Action Required
 
-#### Action required:
-1. Run update_all.sh to update helm repo
-
-## Upgrade to the 1.95.0 Version
-#### Action required:
-1. Check your jwt.secret.apiKeyV3 property of stripo-plugin-api-gateway. The value should be at least 64 symbols.
-
-## Upgrade to the 1.84.0 Version
-Added the support of different metrics on port 8081:
-* liveness probe - http://localhost:8081/actuator/health/liveness
-* readiness probes - http://localhost:8081/actuator/health/readiness
-* prometheus metrics - http://localhost:8081/actuator/prometheus
-
-#### Action required:
-1. Run update_all.sh to update helm repo
+1. **Review Documentation**: Please read the updated `README.md` to understand the changes.
+2. **Sync Your Deployment**: Align your deployment with the provided Helm examples.
+3. **Update Helm Repository**: Execute the following command to update your Helm repository:
+    ```shell
+    helm repo update stripo
+    ```
+</div>
 
 
-## Upgrade to the 1.83.0 Version
 
-### Redis service
-New microservice **redis** was added to support Rate Limits feature.
+## Upgrade to Version 1.125.0
 
-#### Action required:
-1. Use redis.yaml file as an example of service configuration and create your own config
-2. Run install_all.sh script to deploy the microservice
+New settings have been added to limit the length of the `html` and `css` fields in requests to the `stripe-html-cleaner-service` via the `/compress` method:
 
-### Rate limit feature
-The following settings have been added to limit the number of requests from a single IP to the plugin-api-gateway settings:
+- `email.validation.css-max-size` = 5000000
+- `email.validation.html-max-size` = 9000000
 
-* **rate.limit.publicRules**=[{"limit":10000,"durationSecond":60},{"limit":100000,"durationSecond":3600}] - rules for limiting the number of requests within specified periods. Example: 10,000 requests per minute and 100,000 requests per hour.
-* **rate.limit.enabled=true** - a flag indicating whether the limitations should be applied.
-* **redisson.url=redis://redis:6379** - the path to Redis if rate.limit.enabled=true.
-* **redisson.password=test** - the password for the Redis database.
-* **redisson.authorized=true** - indicates whether authorization to Redis is required.
+## Upgrade to Version 1.104.0
 
-#### Action required:
-Update your config map section in stripo-plugin-api-gateway.yaml to enable this feature
+The following settings have been added to restrict requests to only allowed domains in the `stripe-html-cleaner-service` via the `/compress` method:
 
+- `app.cors.allowedOrigins` = *
 
-## Upgrade to the 1.81.0 Version
+## Upgrade to Version 1.97.0
 
-### AI feature
-New microservice **ai-service** was added to support AI assistant feature.
+Docker images have been moved to the **stripo** organization on Docker Hub.
 
-#### Action required:
-1. Modify configmap section of stripo-plugin-api-gateway.yaml. 
-   1. Add `service.ai.url=http://ai-service:8080 property`
-1. Use ai-service.yaml file as an example of service configuration and create your own config
-1. Run install_all.sh script to deploy the microservice
+### Action Required
 
-To enable AI feature you need to modify `stripo_plugin_local_plugin_details` database, `plugins` table, `config` cell. 
-This cell contains JSON with plugin configuration. 
-You need to add
+1. Run `update_all.sh` to update the Helm repository.
+
+## Upgrade to Version 1.95.0
+
+### Action Required
+
+1. Verify the `jwt.secret.apiKeyV3` property of the `stripo-plugin-api-gateway`. Ensure the value is at least 64 symbols.
+
+## Upgrade to Version 1.84.0
+
+Support for different metrics has been added on port 8081:
+
+- Liveness probe: [http://localhost:8081/actuator/health/liveness](http://localhost:8081/actuator/health/liveness)
+- Readiness probes: [http://localhost:8081/actuator/health/readiness](http://localhost:8081/actuator/health/readiness)
+- Prometheus metrics: [http://localhost:8081/actuator/prometheus](http://localhost:8081/actuator/prometheus)
+
+### Action Required
+
+1. Run `update_all.sh` to update the Helm repository.
+
+## Upgrade to Version 1.83.0
+
+### Redis Service
+
+A new microservice, **redis**, has been added to support the Rate Limits feature.
+
+### Action Required
+
+1. Use `redis.yaml` as an example of the service configuration and create your own configuration.
+2. Run the `install_all.sh` script to deploy the microservice.
+
+### Rate Limit Feature
+
+Settings have been added to limit the number of requests from a single IP in the `plugin-api-gateway` settings:
+
+- `rate.limit.publicRules` = [{"limit":10000,"durationSecond":60},{"limit":100000,"durationSecond":3600}] - rules for limiting the number of requests within specified periods. Example: 10,000 requests per minute and 100,000 requests per hour.
+- `rate.limit.enabled` = true - a flag indicating whether the limitations should be applied.
+- `redisson.url` = redis://redis:6379 - the path to Redis if `rate.limit.enabled=true`.
+- `redisson.password` = test - the password for the Redis database.
+- `redisson.authorized` = true - indicates whether authorization to Redis is required.
+
+### Action Required
+
+Update your config map section in `stripo-plugin-api-gateway.yaml` to enable this feature.
+
+## Upgrade to Version 1.81.0
+
+### AI Feature
+
+A new microservice, **ai-service**, has been added to support the AI assistant feature.
+
+### Action Required
+
+1. Modify the `configmap` section of `stripo-plugin-api-gateway.yaml`.
+2. Add the property: `service.ai.url=http://ai-service:8080`.
+3. Use `ai-service.yaml` as an example of the service configuration and create your own configuration.
+4. Run `install_all.sh` script to deploy the microservice.
+
+To enable AI feature, modify the `stripo_plugin_local_plugin_details` database, `plugins` table, `config` cell. This cell contains JSON with the plugin configuration; you need to add:
+
 ```json
 {
   ...,
@@ -80,10 +113,10 @@ You need to add
 }
 ```
 
+### Speed Up Microservice Startup Time
 
-### Speed up microservice startup time
-#### Action required:
-1. Remove env vars LOGSTASH_HOST and LOGSTASH_PORT from env section in your *.yaml files
+### Action Required
 
-This is relevant in case you do not use logstash as a logs collector.
+1. Remove the environment variables `LOGSTASH_HOST` and `LOGSTASH_PORT` from the env section in your `.yaml` files.
+   This is relevant if you do not use Logstash as a logs collector.
 

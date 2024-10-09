@@ -1,0 +1,32 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+resources:
+  limits:
+    memory: 1000Mi
+    cpu: 1000m
+  requests:
+    memory: 600Mi
+    cpu: 300m
+
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+
+env: 
+  - name: NODE_MEMORY
+    value: "500"
+#  - name: LOGSTASH_HOST
+#    value: logstash
+#  - name: LOGSTASH_PORT
+#    value: "5008"

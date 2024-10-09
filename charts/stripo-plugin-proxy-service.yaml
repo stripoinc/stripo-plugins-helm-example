@@ -1,0 +1,59 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+resources:
+  limits:
+    memory: 1000Mi
+    cpu: 500m
+  requests:
+    memory: 1000Mi
+    cpu: 150m
+
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+
+env: 
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms256m -Xmx512m -XX:ReservedCodeCacheSize=128M
+#  - name: LOGSTASH_HOST
+#    value: logstash
+#  - name: LOGSTASH_PORT
+#    value: "5008"
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      stripo.security.service.baseUrl=http://stripo-security-service:8080
+      stripo.security.service.passwordV2=secret
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location ~* "^/actuator" {
+          deny all;
+          return 403;
+        }
+  hosts:
+    - host: plugins.example.com
+      paths:
+        - path: /plugin-proxy-service/(.*)
+          pathType: Prefix
+        - path: /proxy/(.*)
+          pathType: Prefix

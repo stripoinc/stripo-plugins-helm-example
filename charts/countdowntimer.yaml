@@ -1,0 +1,49 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+  hosts:
+    - host: plugins.example.com
+      paths:
+        - path: /api/v1/images/
+          pathType: Prefix
+        - path: /api/version
+          pathType: Prefix
+
+resources:
+  requests:
+    memory: 1Gi
+    cpu: 1000m
+
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+  host: countdowntimer.stripo
+  postgresDb:
+    host: postgres
+    port: "5432"
+    username: user_countdowntimer
+    password: password_countdowntimer
+    databaseName: countdowntimer
+    connectionMinPoolSize: 5
+    connectionMaxPoolSize: 10
+
+volume:
+  enabled: true
+  storageClass:
+    enabled: false
+    className: gp2
+  size: 10Gi

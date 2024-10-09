@@ -1,0 +1,41 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+resources:
+  limits:
+    memory: 700Mi
+    cpu: 1000m
+  requests:
+    memory: 700Mi
+    cpu: 600m
+
+# In case of autoscaling is disabled
+#replicaCount: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms256m -Xmx512m -XX:ReservedCodeCacheSize=128M
+#  - name: LOGSTASH_HOST
+#    value: logstash
+#  - name: LOGSTASH_PORT
+#    value: "5008"
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      amp.validator.active=true
+      amp.validator.url=http://amp-validator-service:8080

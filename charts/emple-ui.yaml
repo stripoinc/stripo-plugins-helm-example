@@ -1,0 +1,29 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+resources:
+  limits:
+    memory: 100Mi
+    cpu: 50m
+  requests:
+    memory: 30Mi
+    cpu: 10m
+
+replicaCount: 1
+
+settings:
+  profile: PLUGINS
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  hosts:
+    - host: plugins.example.com
+      paths:
+        - path: /static/(.*)
+          pathType: Prefix
