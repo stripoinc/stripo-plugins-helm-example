@@ -2,9 +2,9 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
-## Upgrade to Version 1.130.0
-
-We are excited to announce significant improvements and a comprehensive refactoring of all Helm charts and related documentation with the release of version 1.130.0.
+<div style="border: 1px solid red; padding: 10px; border-left-width: 10px; background-color: #fff2f2;">
+<strong>Important!</strong>
+<p><b>09-Oct-2024.</b> We are excited to announce significant improvements and a comprehensive refactoring of all Helm charts and related documentation.</p>
 
 ### Key Changes
 
@@ -19,6 +19,9 @@ We are excited to announce significant improvements and a comprehensive refactor
     ```shell
     helm repo update stripo
     ```
+</div>
+
+
 
 ## Upgrade to Version 1.125.0
 
