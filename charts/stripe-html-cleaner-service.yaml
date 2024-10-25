@@ -8,7 +8,7 @@ resources:
     memory: 700Mi
     cpu: 1000m
   requests:
-    memory: 700Mi
+    memory: 512Mi
     cpu: 600m
 
 # In case of autoscaling is disabled
@@ -23,14 +23,14 @@ autoscaling:
 
 settings:
   profile: PLUGINS
+#  logstash:
+#    host: logstash
+#    port: "5008"
 
 env:
   - name: JAVA_TOOL_OPTIONS
     value: -Xss256k -Xms256m -Xmx512m -XX:ReservedCodeCacheSize=128M
-#  - name: LOGSTASH_HOST
-#    value: logstash
-#  - name: LOGSTASH_PORT
-#    value: "5008"
+
 
 configmap:
   enabled: true

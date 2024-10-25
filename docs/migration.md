@@ -2,9 +2,18 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
-<div style="border: 1px solid red; padding: 10px; border-left-width: 10px; background-color: #fff2f2;">
-<strong>Important!</strong>
-<p><b>09-Oct-2024.</b> We are excited to announce significant improvements and a comprehensive refactoring of all Helm charts and related documentation.</p>
+## Update as of October 25, 2024
+
+### Helm Charts
+
+- **Logstash Configuration:**
+   - Relocated the Logstash section from the `ENV` section to the `settings` section, providing a more organized configuration structure.
+
+- **Kubernetes Resources:**
+   - Updated the default resource requests and limits for Kubernetes to optimize performance and ensure efficient resource utilization.
+
+## Update as of October 09, 2024
+We are excited to announce significant improvements and a comprehensive refactoring of all Helm charts and related documentation.
 
 ### Key Changes
 
@@ -19,9 +28,6 @@ This document is designed to assist you in migrating your Stripo environment to 
     ```shell
     helm repo update stripo
     ```
-</div>
-
-
 
 ## Upgrade to Version 1.125.0
 

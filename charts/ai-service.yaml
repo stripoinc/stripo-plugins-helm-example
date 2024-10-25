@@ -6,10 +6,10 @@ image:
 resources:
   limits:
     memory: 750Mi
-    cpu: 300m
+    cpu: 1000m
   requests:
-    memory: 750Mi
-    cpu: 50m
+    memory: 512Mi
+    cpu: 100m
 
 replicaCount: 1
 
@@ -22,19 +22,19 @@ autoscaling:
 
 settings:
   profile: PLUGINS
+#  logstash:
+#    host: logstash
+#    port: "5008"
 
 env:
   - name: JAVA_TOOL_OPTIONS
     value: -Xss256k -Xms256m -Xmx512m -XX:ReservedCodeCacheSize=128M
-#  - name: LOGSTASH_HOST
-#    value: logstash
-#  - name: LOGSTASH_PORT
-#    value: "5008"
 
 configmap:
   enabled: true
   extraScrapeConfigs:
     application.properties: |
+      logging.level.root=INFO
       spring.datasource.url=jdbc:postgresql://postgres:5432/ai_service
       spring.datasource.username=user_ai_service
       spring.datasource.password=password_ai_service

@@ -5,10 +5,10 @@ image:
 
 resources:
   limits:
-    memory: 3500Mi
+    memory: 4000Mi
     cpu: 1000m
   requests:
-    memory: 3500Mi
+    memory: 3000Mi
     cpu: 500m
 
 # In case of autoscaling is disabled
@@ -23,14 +23,13 @@ autoscaling:
 
 settings:
   profile: PLUGINS
+#  logstash:
+#    host: logstash
+#    port: "5008"
 
 env: 
   - name: JAVA_TOOL_OPTIONS
     value: -Xss256k -Xms512m -Xmx2560m -XX:ReservedCodeCacheSize=128M
-#  - name: LOGSTASH_HOST
-#    value: logstash
-#  - name: LOGSTASH_PORT
-#    value: "5008"
 
 configmap:
   enabled: true
@@ -44,7 +43,7 @@ configmap:
       storage.internal.aws.secretKey=
       storage.internal.aws.bucketName=stripo-plugin-test
       storage.internal.aws.region=eu-central-1
-      storage.internal.aws.baseDownloadUrl=      
+      storage.internal.aws.baseDownloadUrl=
       plugin.service.screenshotUrl=http://screenshot-service:8080
       plugin.service.pluginDetailsUrl=http://stripo-plugin-details-service:8080
       stripo.security.service.baseUrl=http://stripo-security-service:8080

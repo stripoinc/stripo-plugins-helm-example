@@ -6,7 +6,7 @@ image:
 resources:
   limits:
     memory: 1000Mi
-    cpu: 500m
+    cpu: 1000m
   requests:
     memory: 750Mi
     cpu: 50m
@@ -22,14 +22,13 @@ autoscaling:
 
 settings:
   profile: PLUGINS
+#  logstash:
+#    host: logstash
+#    port: "5008"
 
 env:
   - name: JAVA_TOOL_OPTIONS
     value: -Xss256k -Xms400m -Xmx512m -XX:ReservedCodeCacheSize=128M
-#  - name: LOGSTASH_HOST
-#    value: logstash
-#  - name: LOGSTASH_PORT
-#    value: "5008"
 
 configmap:
   enabled: true
