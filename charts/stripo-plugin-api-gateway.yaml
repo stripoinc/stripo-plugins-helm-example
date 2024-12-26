@@ -5,8 +5,8 @@ image:
 
 resources:
   limits:
-    memory: 1000Mi
-    cpu: 1000m
+    memory: 2500Mi
+    cpu: 2000m
   requests:
     memory: 750Mi
     cpu: 150m
@@ -29,7 +29,7 @@ settings:
 
 env: 
   - name: JAVA_TOOL_OPTIONS
-    value: -Xss256k -Xms400m -Xmx512m -XX:ReservedCodeCacheSize=128M
+    value: -Xss256k -Xms400m -Xmx1536m -XX:ReservedCodeCacheSize=128M
 
 configmap:
   enabled: true
