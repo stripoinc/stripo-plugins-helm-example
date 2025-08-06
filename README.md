@@ -22,7 +22,7 @@
    - [Step 2: Insert Required Data into the PostgreSQL Database](#step-2-insert-required-data-into-the-postgresql-database)
      - [Plugin Configuration Parameters](#plugin-configuration-parameters)
    - [Step 3: Additional Steps to Configure Stripo Editor V2 (V2 only)](#additional-steps-to-configure-stripo-editor-v2)
-      - [Step 1: Create CockroachDB Database](#step-1-create-cockroachdb-database)
+      - [Step 1: Create TiDB Database](#step-1-create-tidb-database)
       - [Step 2: Create NATS Account](#step-2-create-nats-account)
       - [Step 3: Create AWS ElastiCache Cluster](#step-3-create-an-aws-elasticache-cluster)
    - [Step 4: Configure Amazon S3 Bucket](#step-3-configure-amazon-s3-bucket)
@@ -63,7 +63,7 @@ The Stripo ecosystem consists of several key components, each playing a crucial 
 - **NATS**:  
   Facilitates messaging and communication between microservices, allowing them to interact in a decoupled manner.
 
-- **CockroachDB**:  
+- **TiDB**:  
   A distributed database that stores email templates and patch information, providing scalability and consistency for critical data.
 
 - **Amazon ElastiCache**:  
@@ -158,14 +158,16 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
        ]
    }
    ```
-6. **CockroachDB**: Version 23.x or higher
- - CockroachDB is a distributed SQL database that offers scalability and strong consistency. You can install CockroachDB by following the official guide: [CockroachDB Installation](https://www.cockroachlabs.com/docs/stable/install-cockroachdb.html)
+6. **TiDB**: Version 7.5.0 or higher
+ - TiDB is a distributed SQL database that offers scalability and strong consistency. You can install TiDB by following the official guide: [TiDB Installation](https://docs.pingcap.com/tidb/stable/quick-start-with-tidb/)
 
    **Additional CockroachDB Parameters:**
       ```bash
-   --cache=.10          # Cache size set to 10% of available memory
-   --max-sql-memory=.70  # SQL memory limited to 70% of available memory
-   --max-tsdb-memory=.1  # Timeseries database memory limited to 10% of available memory
+  tidb:
+    performance.txn-entry-size-limit: 125829120    # The maximum size of a single entry in a transaction (in bytes).
+    performance.txn-total-size-limit: 1000000000   # The maximum total size of all entries in a single transaction (in bytes).
+  tikv:
+    raftstore.raft-entry-max-size: 64MB            #  The maximum size of a single Raft log entry in TiKV.
    ```
 
 7. **Amazon ElastiCache**
@@ -265,10 +267,174 @@ This section provides an overview of the configuration parameters for the plugin
 | `versionHistoryEnabled`                      | Boolean      | Enables version history feature within the editor.                                                                                                |
 
 ### Step 3: Additional steps to configure Stripo Editor V2 (for V2 only)
-#### Step 1: Create CockroachDB Database
+#### Step 1: Create TiDB Database
 To create a CockroachDB database, please refer to the official documentation:
 
-[Official CockroachDB Documentation](https://www.cockroachlabs.com/docs/stable/)
+[Official TiDB Documentation](https://docs.pingcap.com/tidb/stable/quick-start-with-tidb/)
+
+Or follow this steps for configuration after instances created for it:
+
+Introduction
+
+This documentation describes the new TiDB-based database infrastructure, which has replaced the previously used CockroachDB. It provides a complete guide for deployment, administration, monitoring, backup, troubleshooting, and scaling.
+
+System Architecture
+
+The TiDB cluster includes the following components:
+	•	TiDB Server — processes SQL queries
+	•	PD (Placement Driver) — metadata management
+	•	TiKV — distributed key-value storage
+	•	TiFlash — optional columnar storage for OLAP
+	•	Monitoring Stack — Prometheus, Grafana, AlertManager
+
+Current Configuration example:
+  Number of nodes: 5  
+IP addresses:
+- 172.31.12.1 (primary node + monitoring)
+- 172.31.12.2
+- 172.31.12.3
+- 172.31.12.4
+- 172.31.12.5
+Component distribution:
+- PD Servers: all 5 nodes
+- TiDB Servers: all 5 nodes
+- TiKV Servers: all 5 nodes
+- Monitoring: 172.31.12.1
+
+Prerequisites and Preparation
+
+System Requirements:
+	•	OS: Linux (recommended Ubuntu 16.04+ / CentOS 7+)
+	•	CPU: 4+ cores
+	•	RAM: 8GB+
+	•	Disk: SSD, 100GB minimum
+	•	Network: Gigabit Ethernet
+
+#Required Software
+# Install TiUP (TiDB deployment tool)
+curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh
+source ~/.bashrc
+# Install cluster component
+tiup cluster
+
+Server Setup:
+	•	Create the tidb user
+	•	Grant sudo privileges:
+echo 'tidb ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/tidb
+	•	Generate SSH keys and copy to each server
+	•	Disable SELinux and firewalld
+	•	Set timezone to UTC
+	•	Enable and start chronyd
+
+System Parameters:
+
+/etc/sysctl.conf
+net.core.somaxconn = 32768  
+net.ipv4.tcp_syncookies = 0  
+vm.swappiness = 0
+
+/etc/security/limits.conf
+tidb soft nofile 1000000  
+tidb hard nofile 1000000  
+tidb soft stack 32768
+
+Cluster Configuration
+
+topology.yaml
+(Contains full role distribution across nodes — PD, TiDB, TiKV, monitoring, Grafana, AlertManager)
+
+Example topology.yaml
+
+global:
+  user: tidb
+  ssh_port: 22
+  deploy_dir: /tidb-deploy
+  data_dir: /DATA
+  os: linux
+  arch: amd64
+
+monitored:
+  node_exporter_port: 9100
+  blackbox_exporter_port: 9115
+  deploy_dir: /tidb-deploy/monitor-9100
+  data_dir: /DATA/monitor-9100
+  log_dir: /tidb-deploy/monitor-9100/log
+
+server_configs:
+  tidb:
+    performance.txn-entry-size-limit: 125829120
+    performance.txn-total-size-limit: 1000000000
+  tikv:
+    raftstore.raft-entry-max-size: 64MB
+  pd: {}
+  grafana: {}
+
+pd_servers:
+  - host: 172.31.12.1
+    name: pd-1
+  - host: 172.31.12.2
+    name: pd-2
+  - host: 172.31.12.3
+    name: pd-3
+  - host: 172.31.12.4
+    name: pd-4
+  - host: 172.31.12.5
+    name: pd-5
+
+tidb_servers:
+  - host: 172.31.12.1
+  - host: 172.31.12.2
+  - host: 172.31.12.3
+  - host: 172.31.12.4
+  - host: 172.31.12.5
+
+tikv_servers:
+  - host: 172.31.12.1
+  - host: 172.31.12.2
+  - host: 172.31.12.3
+  - host: 172.31.12.4
+  - host: 172.31.12.5
+
+monitoring_servers:
+  - host: 172.31.12.1
+    port: 9090
+    ng_port: 12020
+
+grafana_servers:
+  - host: 172.31.12.1
+    port: 3000
+    username: admin
+    password: admin
+
+alertmanager_servers:
+  - host: 172.31.12.1
+    web_port: 9093
+    cluster_port: 9094
+
+Deployment
+	•	Availability check:
+
+  tiup cluster check topology.yaml --user tidb  
+  tiup cluster check topology.yaml --apply --user tidb
+
+  •	Deploy the cluster:
+
+  tiup cluster deploy tidb-cluster v7.1.0 topology.yaml --user tidb  
+  tiup cluster start tidb-cluster  
+  tiup cluster display tidb-cluster
+
+  mysql -h 172.31.12.101 -P 4000 -u root  
+  SHOW DATABASES;  
+  SELECT tidb_version();
+
+  Backup
+	•	Using BR (Backup & Restore):
+
+  tiup br backup full --pd "172.31.12.1:2379" --storage "local:///backup/full-$(date +%Y%m%d-%H%M%S)"
+
+  •	Restore from backup:
+
+  tiup br restore full --pd "172.31.12.1:2379" --storage "local:///backup/full-yyyyMMdd-HHmmss"
 
 Follow the step-by-step instructions to set up your database correctly.
 
