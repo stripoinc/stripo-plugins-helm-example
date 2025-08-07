@@ -161,7 +161,7 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
 6. **TiDB**: Version 7.5.0 or higher
  - TiDB is a distributed SQL database that offers scalability and strong consistency. You can install TiDB by following the official guide: [TiDB Installation](https://docs.pingcap.com/tidb/stable/quick-start-with-tidb/)
 
-   **Additional CockroachDB Parameters:**
+   **Additional TiDB Parameters:**
       ```bash
   tidb:
     performance.txn-entry-size-limit: 125829120    # The maximum size of a single entry in a transaction (in bytes).
@@ -276,7 +276,7 @@ Or follow this steps for configuration after instances created for it:
 
 Introduction
 
-This documentation describes the new TiDB-based database infrastructure, which has replaced the previously used CockroachDB. It provides a complete guide for deployment, administration, monitoring, backup, troubleshooting, and scaling.
+All IP addresses used in the TiDB section of this document are examples. Please use the internal addresses of your EC2 instances or virtual machines.
 
 System Architecture
 
@@ -343,7 +343,7 @@ Cluster Configuration
 topology.yaml
 (Contains full role distribution across nodes — PD, TiDB, TiKV, monitoring, Grafana, AlertManager)
 
-Example topology.yaml
+This is an example of a working topology.yaml. You may only need to replace the example addresses with the actual internal addresses of your instances.
 
 global:
   user: tidb
