@@ -197,7 +197,7 @@ You can find the script template for database creation at: `./resources/postgres
 
 ### Step 2: Insert Required Data into the PostgreSQL Database
 
-To start using the String editor in plugin mode, you first need to register a plugin in the `stripo-plugin-details-service` database. This database contains a table named `plugins`.
+To start using the String editor in plugin mode, you first need to register a plugin in the database of `stripo-plugin-details-service`. This database contains a table named `plugins`.
 
 For an example on how to register the first plugin, refer to the following SQL script: [02_register_plugin.sql](./resources/postgres/02_register_plugin.sql).
 
@@ -756,14 +756,15 @@ Stripo is not responsible for the system's functionality if this instruction is 
     ```
    with:
     ```js
-    script.src = '{SERVICE_ADDRESS}/resources/uieditor/latest/UIEditor.js';
+    script.src = '{STATIC_HOSTING_ADDRESS}/static/UIEditor.js';
     ```
 3. Add these additional parameters to the plugin configuration:
     ```js
     window.Stripo.init({
         ..., // your initialization params
-        apiBaseUrl: '{SERVICE_ADDRESS}/api/v1',
-        coeditingBasePath: '{SERVICE_ADDRESS}/coediting',
+        apiBaseUrl: 'https://{SERVICE_ADDRESS}/api/v1',
+        coeditingBasePath: 'https://{SERVICE_ADDRESS}/coediting',
+        coeditingWsUrl: 'wss://{SERVICE_ADDRESS}/coediting/ws/coediting',
         ...
     });
     ```

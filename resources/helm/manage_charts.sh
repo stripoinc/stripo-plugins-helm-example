@@ -73,11 +73,11 @@ services=(
   "stripo-plugin-proxy-service"
   "stripo-plugin-statistics-service"
   "stripo-timer-api"
+  "ai-service"
 
   #---------------------------------------------------
   # Comment to run ONLY Stripo editor V2 microservices
   "stripo-plugin-drafts-service"
-  "ai-service"
   "patches-service"
   #---------------------------------------------------
 
