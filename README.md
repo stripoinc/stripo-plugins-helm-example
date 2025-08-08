@@ -357,34 +357,34 @@ All IP addresses used in the TiDB section of this document are examples. Please 
 ##### System Architecture
 
 The TiDB cluster includes the following components:
-	•	TiDB Server — processes SQL queries
-	•	PD (Placement Driver) — metadata management
-	•	TiKV — distributed key-value storage
-	•	TiFlash — optional columnar storage for OLAP
-	•	Monitoring Stack — Prometheus, Grafana, AlertManager
+- TiDB Server — processes SQL queries
+- PD (Placement Driver) — metadata management
+- TiKV — distributed key-value storage
+- TiFlash — optional columnar storage for OLAP
+- Monitoring Stack — Prometheus, Grafana, AlertManager
 
 Current Configuration example:
-  Number of nodes: 5  
-IP addresses:
-- 172.31.12.1 (primary node + monitoring)
-- 172.31.12.2
-- 172.31.12.3
-- 172.31.12.4
-- 172.31.12.5
-Component distribution:
-- PD Servers: all 5 nodes
-- TiDB Servers: all 5 nodes
-- TiKV Servers: all 5 nodes
-- Monitoring: 172.31.12.1
+-  Number of nodes: 5  
+- IP addresses:
+  - 172.31.12.1 (primary node + monitoring)
+  - 172.31.12.2
+  - 172.31.12.3
+  - 172.31.12.4
+  - 172.31.12.5
+- Component distribution:
+  - PD Servers: all 5 nodes
+  - TiDB Servers: all 5 nodes
+  - TiKV Servers: all 5 nodes
+  - Monitoring: 172.31.12.1
 
 ##### Prerequisites and Preparation
 
 System Requirements:
-	•	OS: Linux (recommended Ubuntu 16.04+ / CentOS 7+)
-	•	CPU: 4+ cores
-	•	RAM: 8GB+
-	•	Disk: SSD, 100GB minimum
-	•	Network: Gigabit Ethernet
+- OS: Linux (recommended Ubuntu 16.04+ / CentOS 7+)
+- CPU: 4+ cores
+- RAM: 8GB+
+- Disk: SSD, 100GB minimum
+- Network: Gigabit Ethernet
 
 ##### Required Software
 ```
