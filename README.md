@@ -21,16 +21,16 @@
    - [Step 1: Create PostgreSQL Databases](#step-1-create-postgresql-databases)
    - [Step 2: Insert Required Data into the PostgreSQL Database](#step-2-insert-required-data-into-the-postgresql-database)
      - [Plugin Configuration Parameters](#plugin-configuration-parameters)
-   - [Step 3: Additional Steps to Configure Stripo Editor V2 (V2 only)](#additional-steps-to-configure-stripo-editor-v2)
-      - [Step 1: Create CockroachDB Database](#step-1-create-cockroachdb-database)
+   - [Step 3: Additional steps to configure Stripo Editor V2 (for V2 only)](#step-3-additional-steps-to-configure-stripo-editor-v2-for-v2-only)
+      - [Step 1: Create TiDB Database](#step-1-create-tidb-database)
       - [Step 2: Create NATS Account](#step-2-create-nats-account)
-      - [Step 3: Create AWS ElastiCache Cluster](#step-3-create-an-aws-elasticache-cluster)
-   - [Step 4: Configure Amazon S3 Bucket](#step-3-configure-amazon-s3-bucket)
-   - [Step 5: Update Helm Chart Configurations](#step-4-update-helm-chart-configurations)
-   - [Step 6: Configure Stripo Docker Hub Access](#step-5-configure-stripo-docker-hub-access)
-   - [Step 7: Configure Logging](#step-6-configure-logging)
-   - [Step 8: Deploy Microservices](#step-7-deploy-microservices)
-   - [Step 9: Configure Countdown Timer](#step-8-configure-countdown-timer)
+      - [Step 3: Create an AWS ElastiCache Cluster](#step-3-create-an-aws-elasticache-cluster)
+   - [Step 4: Configure Amazon S3 Bucket](#step-4-configure-amazon-s3-bucket)
+   - [Step 5: Update Helm Chart Configurations](#step-5-update-helm-chart-configurations)
+   - [Step 6: Configure Stripo Docker Hub Access](#step-6-configure-stripo-docker-hub-access)
+   - [Step 7: Configure Logging](#step-7-configure-logging)
+   - [Step 8: Deploy Microservices](#step-8-deploy-microservices)
+   - [Step 9: Configure Countdown Timer](#step-9-configure-countdown-timer)
    - [Step 10: Configure CDN for Static Resources](#step-10-configure-cdn-for-static-resources)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
@@ -63,7 +63,7 @@ The Stripo ecosystem consists of several key components, each playing a crucial 
 - **NATS**:  
   Facilitates messaging and communication between microservices, allowing them to interact in a decoupled manner.
 
-- **CockroachDB**:  
+- **TiDB**:  
   A distributed database that stores email templates and patch information, providing scalability and consistency for critical data.
 
 - **Amazon ElastiCache**:  
@@ -77,7 +77,7 @@ The Plugin infrastructure is composed of 20 microservices, each containerized us
 
 ### Microservice Dependencies
 
-Several microservices rely on external services such as **PostgreSQL**, **CockroachDB**, and **Redis**. These dependencies can be deployed on any infrastructure. The connection between each microservice and its dependencies is defined within the properties in these Helm charts, ensuring smooth and customizable deployments.
+Several microservices rely on external services such as **PostgreSQL**, **TiDB**, and **Redis**. These dependencies can be deployed on any infrastructure. The connection between each microservice and its dependencies is defined within the properties in these Helm charts, ensuring smooth and customizable deployments.
 
 ### Logging and Monitoring
 
@@ -96,7 +96,7 @@ The table below outlines the current microservices, their roles, and their requi
 | **stripo-plugin-statistics-service**    | Stores user session statistics.                                                                        | false        | true            | true            |
 | **stripo-plugin-drafts-service**        | Stores email changes (patches) on autosave.                                                            | false        | true            | false           |
 | **patches-service**                     | Reconstructs full emails from autosave patches.                                                        | false        | true            | false           |
-| **ai-service**                          | Supports AI-based features within the Stripo editor.                                                   | false        | true            | false           |
+| **ai-service**                          | Supports AI-based features within the Stripo editor.                                                   | false        | true            | true            |
 | **stripo-plugin-documents-service**     | Handles document (image) read/upload operations.                                                       | false        | true            | true            |
 | **stripo-plugin-custom-blocks-service** | Manages CRUD operations for custom blocks (modules).                                                   | false        | true            | true            |
 | **stripo-timer-api**                    | Interacts with timers and stores usage statistics for timers.                                          | false        | true            | true            |
@@ -158,15 +158,17 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
        ]
    }
    ```
-6. **CockroachDB**: Version 23.x or higher
- - CockroachDB is a distributed SQL database that offers scalability and strong consistency. You can install CockroachDB by following the official guide: [CockroachDB Installation](https://www.cockroachlabs.com/docs/stable/install-cockroachdb.html)
+6. **TiDB**: Version 7.5.0 or higher
+ - TiDB is a distributed SQL database that offers scalability and strong consistency. You can install TiDB by following the official guide: [TiDB Installation](https://docs.pingcap.com/tidb/stable/quick-start-with-tidb/)
 
-   **Additional CockroachDB Parameters:**
-      ```bash
-   --cache=.10          # Cache size set to 10% of available memory
-   --max-sql-memory=.70  # SQL memory limited to 70% of available memory
-   --max-tsdb-memory=.1  # Timeseries database memory limited to 10% of available memory
-   ```
+   **Additional TiDB Parameters:**
+```
+  tidb:
+      performance.txn-entry-size-limit: 125829120    # The maximum size of a single entry in a transaction (in bytes).
+      performance.txn-total-size-limit: 1000000000   # The maximum total size of all entries in a single transaction (in bytes).
+  tikv:
+      raftstore.raft-entry-max-size: 64MB            #  The maximum size of a single Raft log entry in TiKV.      
+```
 
 7. **Amazon ElastiCache**
  - AWS ElastiCache for Redis official documentation:  [AWS ElastiCache doc](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html)
@@ -195,7 +197,7 @@ You can find the script template for database creation at: `./resources/postgres
 
 ### Step 2: Insert Required Data into the PostgreSQL Database
 
-To start using the String editor in plugin mode, you first need to register a plugin in the `stripo-plugin-details-service` database. This database contains a table named `plugins`.
+To start using the String editor in plugin mode, you first need to register a plugin in the database of `stripo-plugin-details-service`. This database contains a table named `plugins`.
 
 For an example on how to register the first plugin, refer to the following SQL script: [02_register_plugin.sql](./resources/postgres/02_register_plugin.sql).
 
@@ -215,67 +217,327 @@ For an example on how to register the first plugin, refer to the following SQL s
 
 This section provides an overview of the configuration parameters for the plugin setup.
 
-| Parameter                                    | Type         | Description                                                                                                                                       |
-|----------------------------------------------|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `theme.type`                                 | String       | Set to `"DEFAULT"` to use Stripo theme, or `"CUSTOM"` to apply custom theme parameters.                                                           |
-| `theme.params.primary-color`                 | String (Hex) | Sets the primary color (e.g., `#93c47d`).                                                                                                         |
-| `theme.params.secondary-color`               | String (Hex) | Sets the secondary color (e.g., `#ffffff`).                                                                                                       |
-| `theme.params.border-radius-base`            | String (px)  | Defines the base border radius for elements (e.g., `5px`).                                                                                        |
-| `theme.params.customFontLink`                | String (URL) | Link to your public custom font. [More info](https://support.stripo.email/en/articles/3174076-how-to-add-manage-custom-fonts-to-email-templates). |
-| `theme.params.font-size`                     | String (px)  | Sets the font size (e.g., `9px`).                                                                                                                 |
-| `theme.params.font-family`                   | String       | Specifies the font family to use (e.g., `"Segoe UI", Roboto, etc.`).                                                                              |
-| `theme.params.option-panel-background-color` | String (Hex) | Background color of the option panel (e.g., `#cfe2f3`).                                                                                           |
-| `theme.params.default-font-color`            | String (Hex) | Default font color (e.g., `#38761d`).                                                                                                             |
-| `theme.params.panels-border-color`           | String (Hex) | Border color of the panels (e.g., `#0004cc`).                                                                                                     |
-| `theme.removePluginBranding`                 | Boolean      | Set to `true` to hide the Stripo logo within the editor, `false` to display it.                                                                   |
-| `imageGallery.type`                          | String       | Type of storage for uploaded images: `PLUGIN`, `AWS_S3`, `AZURE`, or `API`  (e.g., `PLUGIN`).                                                     |
-| `imageGallery.baseDownloadUrl`               | String (URL) | Base download URL for images (optional).                                                                                                          |
-| `imageGallery.awsBucketName`                 | String       | AWS bucket name for image storage (if using AWS).                                                                                                 |
-| `imageGallery.awsAccessKey`                  | String       | AWS access key (if using AWS).                                                                                                                    |
-| `imageGallery.awsSecretKey`                  | String       | AWS secret key (if using AWS).                                                                                                                    |
-| `imageGallery.awsRegion`                     | String       | AWS region (e.g., `eu-central-1`).                                                                                                                |
-| `imageGallery.azureToken`                    | String       | Azure storage token (if using Azure).                                                                                                             |
-| `imageGallery.api.enabled`                   | Boolean      | Enables custom API for image storage (set to `true`).                                                                                             |
-| `imageGallery.api.url`                       | String (URL) | URL for custom image storage API.                                                                                                                 |
-| `imageGallery.api.username`                  | String       | Username for custom image storage API.                                                                                                            |
-| `imageGallery.api.password`                  | String       | Password for custom image storage API.                                                                                                            |
-| `imageGallery.tabs`                          | Array        | Tabs (folders) displayed in the image gallery UI.                                                                                                 |
-| `imageGallery.maxFileSizeInKBytes`           | Number       | Maximum file size for uploaded images (e.g., `8192` KB).                                                                                          |
-| `imageGallery.imagesBankEnabled`             | Boolean      | Enables the stock image library.                                                                                                                  |
-| `imageGallery.pexelsEnabled`                 | Boolean      | Enables searching stock images from Pexels.                                                                                                       |
-| `imageGallery.pixabayEnabled`                | Boolean      | Enables searching stock images from Pixabay.                                                                                                      |
-| `imageGallery.iconFinderEnabled`             | Boolean      | Enables searching stock icons from Iconfinder.                                                                                                    |
-| `imageGallery.skipChunkedTransferEncoding`   | Boolean      | Set `false` to use chunked transfer encoding for image uploads.                                                                                   |
-| `blocksLibrary.enabled`                      | Boolean      | Enables the Modules section in the editor (true/false).                                                                                           |
-| `blocksLibrary.tabs`                         | Array        | Folders displayed in the Modules section of the editor.                                                                                           |
-| `blocksLibrary.view`                         | String       | Defines the view type for modules (`GRID` or `FULL_WIDTH`).                                                                                       |
-| `baseBlocks`                                 | Object       | Enables/disables individual base blocks like image, text, button, etc.                                                                            |
-| `blockControls`                              | Object       | Enables/disables advanced controls for blocks in the editor.                                                                                      |
-| `permissionsApi.enabled`                     | Boolean      | Enables the Permissions Checker API.                                                                                                              |
-| `ai.openAiApiKey`                            | String       | OpenAI API key for AI features.                                                                                                                   |
-| `ai.textBlockAiEnabled`                      | Boolean      | Enables AI for text block suggestions.                                                                                                            |
-| `ai.smartModuleAiEnabled`                    | Boolean      | Enables AI for Smart modules suggestions.                                                                                                         |
-| `mergeTagsEnabled`                           | Boolean      | Enables merge tags within the editor.                                                                                                             |
-| `specialLinksEnabled`                        | Boolean      | Enables special links (e.g., unsubscribe, profile update) within the editor.                                                                      |
-| `customFontsEnabled`                         | Boolean      | Enables custom fonts within the editor.                                                                                                           |
-| `autoSaveApi.enabled`                        | Boolean      | Enables auto-saving of progress in the editor.                                                                                                    |
-| `autoSaveApiV2.enabled`                      | Boolean      | Enables notifications of changes in the editor V2.                                                                                                |
-| `autoSaveEnabled`                            | Boolean      | Enables auto-saving in the editor V2.                                                                                                             |
-| `undoEnabled`                                | Boolean      | Enables undo/redo actions within the editor.                                                                                                      |
-| `versionHistoryEnabled`                      | Boolean      | Enables version history feature within the editor.                                                                                                |
+| Parameter                                       | Type         | Description                                                                                                                                       |
+|-------------------------------------------------|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `theme.type`                                    | String       | Set to `"DEFAULT"` to use Stripo theme, or `"CUSTOM"` to apply custom theme parameters.                                                           |
+| `theme.params.primary-color`                    | String (Hex) | Sets the primary color (e.g., `#93c47d`).                                                                                                         |
+| `theme.params.secondary-color`                  | String (Hex) | Sets the secondary color (e.g., `#ffffff`).                                                                                                       |
+| `theme.params.border-radius-base`               | String (px)  | Defines the base border radius for elements (e.g., `5px`).                                                                                        |
+| `theme.params.customFontLink`                   | String (URL) | Link to your public custom font. [More info](https://support.stripo.email/en/articles/3174076-how-to-add-manage-custom-fonts-to-email-templates). |
+| `theme.params.font-size`                        | String (px)  | Sets the font size (e.g., `9px`).                                                                                                                 |
+| `theme.params.font-family`                      | String       | Specifies the font family to use (e.g., `"Segoe UI", Roboto, etc.`).                                                                              |
+| `theme.params.option-panel-background-color`    | String (Hex) | Background color of the option panel (e.g., `#cfe2f3`).                                                                                           |
+| `theme.params.default-font-color`               | String (Hex) | Default font color (e.g., `#38761d`).                                                                                                             |
+| `theme.params.panels-border-color`              | String (Hex) | Border color of the panels (e.g., `#0004cc`).                                                                                                     |
+| `theme.removePluginBranding`                    | Boolean      | Set to `true` to hide the Stripo logo within the editor, `false` to display it.                                                                   |
+| `imageGallery.type`                             | String       | Type of storage for uploaded images: `PLUGIN`, `AWS_S3`, `AZURE`, `CLOUDINARY`, `GOOGLE_CLOUD`, or `API` (e.g., `PLUGIN`).                        |
+| `imageGallery.baseDownloadUrl`                  | String (URL) | Base download URL for images (optional).                                                                                                          |
+| `imageGallery.awsBucketName`                    | String       | AWS bucket name for image storage (if using AWS).                                                                                                 |
+| `imageGallery.awsAccessKey`                     | String       | AWS access key (if using AWS).                                                                                                                    |
+| `imageGallery.awsSecretKey`                     | String       | AWS secret key (if using AWS).                                                                                                                    |
+| `imageGallery.awsRegion`                        | String       | AWS region (e.g., `eu-central-1`).                                                                                                                |
+| `imageGallery.azureToken`                       | String       | Azure storage token (if using Azure).                                                                                                             |
+| `imageGallery.azureBaseDownloadUrl`             | String (URL) | Azure base download URL for images (if using Azure).                                                                                              |
+| `imageGallery.cloudinaryCloudName`              | String       | Cloudinary cloud name (if using Cloudinary).                                                                                                      |
+| `imageGallery.cloudinaryApiKey`                 | String       | Cloudinary API key (if using Cloudinary).                                                                                                         |
+| `imageGallery.cloudinaryApiSecret`              | String       | Cloudinary API secret (if using Cloudinary).                                                                                                      |
+| `imageGallery.googleCloudBucketName`            | String       | Google Cloud Storage bucket name (if using Google Cloud).                                                                                         |
+| `imageGallery.googleCloudProjectId`             | String       | Google Cloud project ID (if using Google Cloud).                                                                                                  |
+| `imageGallery.googleCloudKey`                   | String       | Google Cloud authentication key (if using Google Cloud).                                                                                          |
+| `imageGallery.api.enabled`                      | Boolean      | Enables custom API for image storage (set to `true`).                                                                                             |
+| `imageGallery.api.url`                          | String (URL) | URL for custom image storage API.                                                                                                                 |
+| `imageGallery.api.username`                     | String       | Username for custom image storage API.                                                                                                            |
+| `imageGallery.api.password`                     | String       | Password for custom image storage API.                                                                                                            |
+| `imageGallery.tabs`                             | Array        | Tabs (folders) displayed in the image gallery UI.                                                                                                 |
+| `imageGallery.tabs[].label`                     | Object       | Localized labels for the tab (e.g., `{"en": "Photos", "es": "Fotos"}`).                                                                           |
+| `imageGallery.tabs[].key`                       | String       | Unique key identifier for the tab.                                                                                                                |
+| `imageGallery.tabs[].canWrite`                  | Boolean      | Whether users can upload/write to this tab (default: `false`).                                                                                    |
+| `imageGallery.tabs[].role`                      | String       | Required role to access this tab (`ADMIN` or `USER`).                                                                                             |
+| `imageGallery.maxFileSizeInKBytes`              | Number       | Maximum file size for uploaded images (e.g., `8192` KB).                                                                                          |
+| `imageGallery.imagesBankEnabled`                | Boolean      | Enables the stock image library.                                                                                                                  |
+| `imageGallery.pexelsEnabled`                    | Boolean      | Enables searching stock images from Pexels.                                                                                                       |
+| `imageGallery.pixabayEnabled`                   | Boolean      | Enables searching stock images from Pixabay.                                                                                                      |
+| `imageGallery.iconFinderEnabled`                | Boolean      | Enables searching stock icons from Iconfinder.                                                                                                    |
+| `imageGallery.pexelsKey`                        | String       | Pexels API key for stock image search.                                                                                                            |
+| `imageGallery.pixabayKey`                       | String       | Pixabay API key for stock image search.                                                                                                           |
+| `imageGallery.iconFinderKey`                    | String       | Iconfinder API key for stock icon search.                                                                                                         |
+| `imageGallery.imageSearchEnabled`               | Boolean      | Enables image search functionality.                                                                                                               |
+| `imageGallery.iconSearchEnabled`                | Boolean      | Enables icon search functionality.                                                                                                                |
+| `imageGallery.imagesBankLabel`                  | Object       | Localized labels for the images bank (e.g., `{"en": "Stock", "es": "Banco"}`).                                                                    |
+| `imageGallery.skipChunkedTransferEncoding`      | Boolean      | Set `false` to use chunked transfer encoding for image uploads.                                                                                   |
+| `blocksLibrary.enabled`                         | Boolean      | Enables the Modules section in the editor (true/false).                                                                                           |
+| `blocksLibrary.tabs`                            | Array        | Folders displayed in the Modules section of the editor.                                                                                           |
+| `blocksLibrary.tabs[].viewOrder`                | Number       | Display order of the tab in the UI.                                                                                                               |
+| `blocksLibrary.tabs[].label`                    | Object       | Localized labels for the tab (e.g., `{"en": "Email", "es": "Correo"}`).                                                                           |
+| `blocksLibrary.tabs[].key`                      | String       | Unique key identifier for the tab.                                                                                                                |
+| `blocksLibrary.tabs[].canWrite`                 | Boolean      | Whether users can save modules to this tab (default: `false`).                                                                                    |
+| `blocksLibrary.tabs[].role`                     | String       | Required role to access this tab (`ADMIN` or `USER`).                                                                                             |
+| `blocksLibrary.view`                            | String       | Defines the view type for modules (`NET` or `FULL_WIDTH`, default: `FULL_WIDTH`).                                                                 |
+| `baseBlocks`                                    | Object       | Enables/disables individual base blocks like image, text, button, etc.                                                                            |
+| `baseBlocks.imageEnabled`                       | Boolean      | Enables the Image block (default: `true`).                                                                                                        |
+| `baseBlocks.textEnabled`                        | Boolean      | Enables the Text block (default: `true`).                                                                                                         |
+| `baseBlocks.buttonEnabled`                      | Boolean      | Enables the Button block (default: `true`).                                                                                                       |
+| `baseBlocks.spacerEnabled`                      | Boolean      | Enables the Spacer block (default: `true`).                                                                                                       |
+| `baseBlocks.videoEnabled`                       | Boolean      | Enables the Video block (default: `true`).                                                                                                        |
+| `baseBlocks.socialNetEnabled`                   | Boolean      | Enables the Social Networks block (default: `true`).                                                                                              |
+| `baseBlocks.bannerEnabled`                      | Boolean      | Enables the Banner block (default: `true`).                                                                                                       |
+| `baseBlocks.menuEnabled`                        | Boolean      | Enables the Menu block (default: `true`).                                                                                                         |
+| `baseBlocks.htmlEnabled`                        | Boolean      | Enables the HTML block (default: `true`).                                                                                                         |
+| `baseBlocks.timerEnabled`                       | Boolean      | Enables the Timer block (default: `false`).                                                                                                       |
+| `baseBlocks.ampCarouselEnabled`                 | Boolean      | Enables the AMP Carousel block (default: `true`).                                                                                                 |
+| `baseBlocks.ampAccordionEnabled`                | Boolean      | Enables the AMP Accordion block (default: `true`).                                                                                                |
+| `baseBlocks.ampFormControlsEnabled`             | Boolean      | Enables the AMP Form block (default: `true`).                                                                                                     |
+| `blockControls`                                 | Object       | Enables/disables advanced controls for blocks in the editor.                                                                                      |
+| `blockControls.blockVisibilityEnabled`          | Boolean      | Enables block visibility controls (default: `true`).                                                                                              |
+| `blockControls.mobileInversionEnabled`          | Boolean      | Enables mobile inversion controls (default: `true`).                                                                                              |
+| `blockControls.mobileAlignmentEnabled`          | Boolean      | Enables mobile alignment controls (default: `true`).                                                                                              |
+| `blockControls.stripePaddingEnabled`            | Boolean      | Enables stripe padding controls (default: `true`).                                                                                                |
+| `blockControls.containerBackgroundEnabled`      | Boolean      | Enables container background controls (default: `true`).                                                                                          |
+| `blockControls.structureBackgroundImageEnabled` | Boolean      | Enables structure background image controls (default: `true`).                                                                                    |
+| `blockControls.containerBackgroundImageEnabled` | Boolean      | Enables container background image controls (default: `true`).                                                                                    |
+| `blockControls.dynamicStructuresEnabled`        | Boolean      | Enables dynamic structures controls (default: `true`).                                                                                            |
+| `blockControls.imageSrcLinkEnabled`             | Boolean      | Enables image source link controls (default: `true`).                                                                                             |
+| `blockControls.ampVisibilityEnabled`            | Boolean      | Enables AMP visibility controls (default: `true`).                                                                                                |
+| `blockControls.smartBlocksEnabled`              | Boolean      | Enables smart blocks functionality (default: `true`).                                                                                             |
+| `blockControls.imageEditorPluginEnabled`        | Boolean      | Enables built-in image editor plugin (default: `true`).                                                                                           |
+| `blockControls.mobileIndentPluginEnabled`       | Boolean      | Enables mobile indent plugin (default: `true`).                                                                                                   |
+| `blockControls.rolloverEffectEnabled`           | Boolean      | Enables rollover effect controls (default: `true`).                                                                                               |
+| `blockControls.synchronizableModulesEnabled`    | Boolean      | Enables synchronizable modules functionality (default: `false`).                                                                                  |
+| `blockControls.compressionEnabled`              | Boolean      | Enables image compression functionality (default: `false`).                                                                                       |
+| `blockControls.compressionRate`                 | Number       | Image compression rate (1-100, where 100 is best quality).                                                                                        |
+| `permissionsApi.enabled`                        | Boolean      | Enables the Permissions Checker API.                                                                                                              |
+| `permissionsApi.url`                            | String (URL) | URL for the Permissions API endpoint.                                                                                                             |
+| `permissionsApi.username`                       | String       | Username for Permissions API authentication.                                                                                                      |
+| `permissionsApi.password`                       | String       | Password for Permissions API authentication.                                                                                                      |
+| `ai.openAiApiKey`                               | String       | OpenAI API key for AI features.                                                                                                                   |
+| `ai.textBlockAiEnabled`                         | Boolean      | Enables AI for text block suggestions.                                                                                                            |
+| `ai.smartModuleAiEnabled`                       | Boolean      | Enables AI for Smart modules suggestions.                                                                                                         |
+| `ai.openAiModel`                                | String       | OpenAI model to use for AI features (e.g., `gpt-4`).                                                                                              |
+| `ai.geminiProjectId`                            | String       | Google Gemini project ID for AI features.                                                                                                         |
+| `ai.geminiServiceAccountKey`                    | String       | Google Gemini service account key for authentication.                                                                                             |
+| `ai.stabilityBearerToken`                       | String       | Stability AI bearer token for image generation.                                                                                                   |
+| `ai.geminiEnabled`                              | Boolean      | Enables Google Gemini AI features.                                                                                                                |
+| `ai.stabilityEnabled`                           | Boolean      | Enables Stability AI for image generation.                                                                                                        |
+| `ai.dallEEnabled`                               | Boolean      | Enables DALL-E for AI image generation.                                                                                                           |
+| `ai.gpt4oEnabled`                               | Boolean      | Enables GPT-4 model features.                                                                                                                     |
+| `ai.subjectAiEnabled`                           | Boolean      | Enables AI for email subject line suggestions.                                                                                                    |
+| `ai.altTextEnabled`                             | Boolean      | Enables AI for generating image alt text.                                                                                                         |
+| `mergeTagsEnabled`                              | Boolean      | Enables merge tags within the editor.                                                                                                             |
+| `specialLinksEnabled`                           | Boolean      | Enables special links (e.g., unsubscribe, profile update) within the editor.                                                                      |
+| `customFontsEnabled`                            | Boolean      | Enables custom fonts within the editor.                                                                                                           |
+| `autoSaveApi.enabled`                           | Boolean      | Enables auto-saving of progress in the editor.                                                                                                    |
+| `autoSaveApi.url`                               | String (URL) | URL for the Auto-Save API endpoint.                                                                                                               |
+| `autoSaveApi.username`                          | String       | Username for Auto-Save API authentication.                                                                                                        |
+| `autoSaveApi.password`                          | String       | Password for Auto-Save API authentication.                                                                                                        |
+| `autoSaveApiV2.enabled`                         | Boolean      | Enables notifications of changes in the editor V2.                                                                                                |
+| `autoSaveApiV2.url`                             | String (URL) | URL for the Auto-Save API V2 endpoint.                                                                                                            |
+| `autoSaveApiV2.username`                        | String       | Username for Auto-Save API V2 authentication.                                                                                                     |
+| `autoSaveApiV2.password`                        | String       | Password for Auto-Save API V2 authentication.                                                                                                     |
+| `autoSaveEnabled`                               | Boolean      | Enables auto-saving in the editor V2.                                                                                                             |
+| `undoEnabled`                                   | Boolean      | Enables undo/redo actions within the editor.                                                                                                      |
+| `versionHistoryEnabled`                         | Boolean      | Enables version history feature within the editor.                                                                                                |
+| `baseSubDomainSourcePath`                       | String       | Base subdomain source path for resources.                                                                                                         |
+| `editorPermissionsApi.enabled`                  | Boolean      | Enables the Editor Permissions API.                                                                                                               |
+| `editorPermissionsApi.url`                      | String (URL) | URL for the Editor Permissions API endpoint.                                                                                                      |
+| `editorPermissionsApi.username`                 | String       | Username for Editor Permissions API authentication.                                                                                               |
+| `editorPermissionsApi.password`                 | String       | Password for Editor Permissions API authentication.                                                                                               |
 
 ### Step 3: Additional steps to configure Stripo Editor V2 (for V2 only)
-#### Step 1: Create CockroachDB Database
-To create a CockroachDB database, please refer to the official documentation:
+#### Step 1: Create TiDB Database
+To create a TiDB database, please refer to the official documentation:
 
-[Official CockroachDB Documentation](https://www.cockroachlabs.com/docs/stable/)
+[Official TiDB Documentation](https://docs.pingcap.com/tidb/stable/quick-start-with-tidb/)
+
+Or follow these steps for configuration after instances created for it:
+
+##### Introduction
+
+All IP addresses used in the TiDB section of this document are examples. Please use the internal addresses of your EC2 instances or virtual machines.
+
+##### System Architecture
+
+The TiDB cluster includes the following components:
+- TiDB Server — processes SQL queries
+- PD (Placement Driver) — metadata management
+- TiKV — distributed key-value storage
+- TiFlash — optional columnar storage for OLAP
+- Monitoring Stack — Prometheus, Grafana, AlertManager
+
+Current Configuration example:
+-  Number of nodes: 5  
+- IP addresses:
+  - 172.31.12.1 (primary node + monitoring)
+  - 172.31.12.2
+  - 172.31.12.3
+  - 172.31.12.4
+  - 172.31.12.5
+- Component distribution:
+  - PD Servers: all 5 nodes
+  - TiDB Servers: all 5 nodes
+  - TiKV Servers: all 5 nodes
+  - Monitoring: 172.31.12.1
+
+##### Prerequisites and Preparation
+
+System Requirements:
+- OS: Linux (recommended Ubuntu 16.04+ / CentOS 7+)
+- CPU: 4+ cores
+- RAM: 8GB+
+- Disk: SSD, 100GB minimum
+- Network: Gigabit Ethernet
+
+##### Required Software
+```
+# Install TiUP (TiDB deployment tool)
+curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh
+source ~/.bashrc
+# Install cluster component
+tiup cluster
+```
+
+##### Server Setup:
+- Create the tidb user
+- Grant sudo privileges:
+```
+echo 'tidb ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/tidb
+```
+- Generate SSH keys and copy to each server
+- Disable SELinux and firewalld
+- Set timezone to UTC
+- Enable and start chronyd
+
+##### System Parameters:
+
+```
+# /etc/sysctl.conf
+net.core.somaxconn = 32768  
+net.ipv4.tcp_syncookies = 0  
+vm.swappiness = 0
+```
+
+```
+# /etc/security/limits.conf
+tidb soft nofile 1000000  
+tidb hard nofile 1000000  
+tidb soft stack 32768
+```
+
+##### Cluster Configuration
+
+**topology.yaml**
+(Contains full role distribution across nodes — PD, TiDB, TiKV, monitoring, Grafana, AlertManager)
+
+This is an example of a working topology.yaml. You may only need to replace the example addresses with the actual internal addresses of your instances.
+
+```yaml
+global:
+  user: tidb
+  ssh_port: 22
+  deploy_dir: /tidb-deploy
+  data_dir: /DATA
+  os: linux
+  arch: amd64
+
+monitored:
+  node_exporter_port: 9100
+  blackbox_exporter_port: 9115
+  deploy_dir: /tidb-deploy/monitor-9100
+  data_dir: /DATA/monitor-9100
+  log_dir: /tidb-deploy/monitor-9100/log
+
+server_configs:
+  tidb:
+    performance.txn-entry-size-limit: 125829120
+    performance.txn-total-size-limit: 1000000000
+  tikv:
+    raftstore.raft-entry-max-size: 64MB
+  pd: {}
+  grafana: {}
+
+pd_servers:
+  - host: 172.31.12.1
+    name: pd-1
+  - host: 172.31.12.2
+    name: pd-2
+  - host: 172.31.12.3
+    name: pd-3
+  - host: 172.31.12.4
+    name: pd-4
+  - host: 172.31.12.5
+    name: pd-5
+
+tidb_servers:
+  - host: 172.31.12.1
+  - host: 172.31.12.2
+  - host: 172.31.12.3
+  - host: 172.31.12.4
+  - host: 172.31.12.5
+
+tikv_servers:
+  - host: 172.31.12.1
+  - host: 172.31.12.2
+  - host: 172.31.12.3
+  - host: 172.31.12.4
+  - host: 172.31.12.5
+
+monitoring_servers:
+  - host: 172.31.12.1
+    port: 9090
+    ng_port: 12020
+
+grafana_servers:
+  - host: 172.31.12.1
+    port: 3000
+    username: admin
+    password: admin
+
+alertmanager_servers:
+  - host: 172.31.12.1
+    web_port: 9093
+    cluster_port: 9094
+```
+
+##### Deployment
+- Availability check:
+
+```
+tiup cluster check topology.yaml --user tidb  
+tiup cluster check topology.yaml --apply --user tidb
+```
+
+- Deploy the cluster:
+
+```
+tiup cluster deploy tidb-cluster v7.1.0 topology.yaml --user tidb  
+tiup cluster start tidb-cluster  
+tiup cluster display tidb-cluster
+```
+
+```
+mysql -h 172.31.12.101 -P 4000 -u root  
+SHOW DATABASES;  
+SELECT tidb_version();
+```
+
+##### Backup
+- Using BR (Backup & Restore):
+
+```
+tiup br backup full --pd "172.31.12.1:2379" --storage "local:///backup/full-$(date +%Y%m%d-%H%M%S)"
+```
+
+- Restore from backup:
+
+```
+tiup br restore full --pd "172.31.12.1:2379" --storage "local:///backup/full-yyyyMMdd-HHmmss"
+```
 
 Follow the step-by-step instructions to set up your database correctly.
 
-#### Step 2: Create NATS account
+#### Step 2: Create NATS Account
 To create a NATS account, please follow the official documentation provided by NATS. The official guide will walk you through the process step-by-step to ensure your account is set up correctly.
 
-#### Step 3. Create an AWS ElastiCache Cluster
+#### Step 3: Create an AWS ElastiCache Cluster
 To create an AWS ElastiCache cluster, please refer to the official AWS documentation for detailed instructions and best practices.
 
 
@@ -344,7 +606,7 @@ Stripo logs can be collected using the ELK stack. Follow these steps to configur
    Replace `DEBUG` with the desired log level (e.g., `INFO`, `WARN`, `ERROR`) as needed for your use case.
 
 
-### Step 8: Deploy microservices
+### Step 8: Deploy Microservices
 
 #### Add Stripo helm repo with command
 ```shell
@@ -494,14 +756,15 @@ Stripo is not responsible for the system's functionality if this instruction is 
     ```
    with:
     ```js
-    script.src = '{SERVICE_ADDRESS}/resources/uieditor/latest/UIEditor.js';
+    script.src = '{STATIC_HOSTING_ADDRESS}/static/UIEditor.js';
     ```
 3. Add these additional parameters to the plugin configuration:
     ```js
     window.Stripo.init({
         ..., // your initialization params
-        apiBaseUrl: '{SERVICE_ADDRESS}/api/v1',
-        coeditingBasePath: '{SERVICE_ADDRESS}/coediting',
+        apiBaseUrl: 'https://{SERVICE_ADDRESS}/api/v1',
+        coeditingBasePath: 'https://{SERVICE_ADDRESS}/coediting',
+        coeditingWsUrl: 'wss://{SERVICE_ADDRESS}/coediting/ws/coediting',
         ...
     });
     ```
