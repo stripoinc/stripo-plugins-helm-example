@@ -8,7 +8,7 @@ resources:
     memory: 4000Mi
     cpu: 1000m
   requests:
-    memory: 3000Mi
+    memory: 2000Mi
     cpu: 500m
 
 # In case of autoscaling is disabled
