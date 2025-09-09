@@ -35,9 +35,9 @@ settings:
     goMaxProcs: "2"
     # Depends on memory limit (~90%). 600 for 700m
     goMemLimit: 600MiB
-  cockroachDb:
+  tiDb:
     host: db_host
-    port: "26257"
+    port: "4000"
     username: db_user
     password: db_password
     databaseName: stripo_coediting_db
