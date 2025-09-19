@@ -22,12 +22,14 @@
    - [Step 2: Insert Required Data into the PostgreSQL Database](#step-2-insert-required-data-into-the-postgresql-database)
      - [Plugin Configuration Parameters](#plugin-configuration-parameters)
    - [Step 3: Additional steps to configure Stripo Editor V2 (for V2 only)](#step-3-additional-steps-to-configure-stripo-editor-v2-for-v2-only)
-     - [Step 1: Create TiDB Database](#step-1-create-tidb-database)
-     - [Step 2: Create NATS Account](#step-2-create-nats-account)
-     - [Step 3: Create an AWS ElastiCache Cluster](#step-3-create-an-aws-elasticache-cluster)
+     - [Create TiDB Database](#create-tidb-database)
+     - [Create NATS Account](#create-nats-account)
+     - [Create an AWS ElastiCache Cluster](#create-an-aws-elasticache-cluster)
    - [Step 4: Configure Amazon S3 Bucket](#step-4-configure-amazon-s3-bucket)
    - [Step 5: Update Helm Chart Configurations](#step-5-update-helm-chart-configurations)
-   - [Step 6: Configure Stripo Docker Hub Access](#step-6-configure-stripo-docker-hub-access)
+   - [Step 6: Configure Docker Image Access](#step-6-configure-docker-image-access)
+     - [Configure Stripo Docker Hub Access](#configure-stripo-docker-hub-access)
+     - [Configure Amazon ECR Access (Alternative to Docker Hub)](#configure-amazon-ecr-access-alternative-to-docker-hub)
    - [Step 7: Configure Logging](#step-7-configure-logging)
    - [Step 8: Deploy Microservices](#step-8-deploy-microservices)
    - [Step 9: Configure Countdown Timer](#step-9-configure-countdown-timer)
@@ -160,6 +162,8 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
 6. **TiDB**: Version 7.5.0 or higher
 
 - TiDB is a distributed SQL database that offers scalability and strong consistency. You can install TiDB by following the official guide: [TiDB Installation](https://docs.pingcap.com/tidb/stable/quick-start-with-tidb/)
+
+  **Important Note**: When configuring TiDB connection parameters in your application configuration, ensure that the port value is specified as an integer (e.g., `4000`) rather than a string (e.g., `"4000"`). Some applications may require the port to be specified as a numeric value to avoid type conversion errors.
 
   **Additional TiDB Parameters:**
 
@@ -342,7 +346,7 @@ This section provides an overview of the configuration parameters for the plugin
 
 ### Step 3: Additional steps to configure Stripo Editor V2 (for V2 only)
 
-#### Step 1: Create TiDB Database
+#### Create TiDB Database
 
 To create a TiDB database, please refer to the official documentation:
 
@@ -543,11 +547,11 @@ tiup br restore full --pd "172.31.12.1:2379" --storage "local:///backup/full-yyy
 
 Follow the step-by-step instructions to set up your database correctly.
 
-#### Step 2: Create NATS Account
+#### Create NATS Account
 
 To create a NATS account, please follow the official documentation provided by NATS. The official guide will walk you through the process step-by-step to ensure your account is set up correctly.
 
-#### Step 3: Create an AWS ElastiCache Cluster
+#### Create an AWS ElastiCache Cluster
 
 To create an AWS ElastiCache cluster, please refer to the official AWS documentation for detailed instructions and best practices.
 
@@ -572,7 +576,9 @@ To create an AWS ElastiCache cluster, please refer to the official AWS documenta
 
 Enhance the `configmap` sections of the Helm charts for each microservice located in `./charts/*.yaml`. Add the necessary properties to include the actual database settings and secret keys.
 
-### Step 6: Configure Stripo Docker Hub Access
+### Step 6: Configure Docker Image Access
+
+#### Configure Stripo Docker Hub Access
 
 1. **Request Access to Stripo Docker Hub Repository**: Contact the Stripo team and request them to add your Docker Hub account to the Stripo Docker Hub repository.
 2. **Login to Docker Hub**: Ensure you are logged into your Docker Hub account.
@@ -589,6 +595,73 @@ Enhance the `configmap` sections of the Helm charts for each microservice locate
 4. **Update Secret Token**:
 
    - Replace `{{ YOUR_SECRET_TOKEN_SHOULD_BE_HERE }}` inside `./resources/secrets/docker-hub-secret.yaml` with the Base64 hash obtained from the previous step.
+
+#### Configure Amazon ECR Access (Alternative to Docker Hub)
+
+If you prefer to use Amazon ECR instead of Docker Hub for hosting Docker images, you can configure cross-account access to your ECR repository. This section provides instructions for both the ECR repository owner and the client account.
+
+##### 1: Account EKS Configuration
+
+**a. Create IAM Role with ECR Access**
+
+In the client account, create an IAM role with a policy that allows access to your ECR repository:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+**b. Bind Role to Kubernetes ServiceAccount (IRSA)**
+
+1. Create an IAM role and bind it to the Kubernetes service account using IRSA:
+
+```bash
+eksctl create iamserviceaccount \
+  --name <SERVICE_ACCOUNT_NAME> \
+  --namespace <NAMESPACE> \
+  --cluster <EKS_CLUSTER_NAME> \
+  --attach-policy-arn arn:aws:iam::<ACCOUNT_ID>:policy/<POLICY_NAME> \
+  --approve \
+  --role-name <IAM_ROLE_NAME>
+```
+
+2. Specify this serviceAccount in your deployment:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  template:
+    spec:
+      serviceAccountName: <SERVICE_ACCOUNT_NAME>
+```
+
+##### 2: Using ECR Images
+
+In your deployment, the client can reference your ECR image as follows:
+
+```yaml
+containers:
+  - name: app
+    image: <YOUR_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/<REPO_NAME>:<TAG>
+```
+
+**Important**: Ensure that kubectl and eksctl are configured to work with the correct cluster and context.
 
 ### Step 7: Configure Logging
 
@@ -675,7 +748,7 @@ To enable Stripo editor v2, please uncomment the corresponding section in the `m
    With the generated password hash, update the `system_user` table in your database by executing the following SQL query. Replace `${YOUR_PASSWORD_HASH}` with the hash generated in the previous step:
 
    ```sql
-   UPDATE system_user 
+   UPDATE "system_user" 
    SET password = '${YOUR_PASSWORD_HASH}'
    WHERE username = 'Admin';
    ```
@@ -690,7 +763,7 @@ Generate password hash:
 <- $2b$12$QNSzmdqZB/MkTZSkiI/RlOn0n0dQABAjZFVYIeIjnvF2pz19vWmfq
 
 Run the following SQL query to update the password hash in the database:
-UPDATE system_user SET password = '$2b$12$QNSzmdqZB/MkTZSkiI/RlOn0n0dQABAjZFVYIeIjnvF2pz19vWmfq' WHERE username = 'Admin';
+UPDATE "system_user" SET password = '$2b$12$QNSzmdqZB/MkTZSkiI/RlOn0n0dQABAjZFVYIeIjnvF2pz19vWmfq' WHERE username = 'Admin';
 
 Update the stripo-timer-api.yaml file:
 timer.username=Admin
