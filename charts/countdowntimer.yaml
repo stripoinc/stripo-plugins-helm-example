@@ -3,6 +3,10 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
+service:
+  type: ClusterIP
+  port: 8080
+
 ingress:
   enabled: true
   className: "nginx"

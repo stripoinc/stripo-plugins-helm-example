@@ -41,7 +41,7 @@ configmap:
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_timers
       spring.datasource.username=user_timers
       spring.datasource.password=password_timers
-      timer.url=http://countdowntimer:80/api/
+      timer.url=http://countdowntimer:8080/api/
       timer.username=Admin
       timer.password=secret
       spring.security.user.passwordV2=secret
