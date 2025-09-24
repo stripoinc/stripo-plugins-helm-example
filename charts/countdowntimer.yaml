@@ -29,20 +29,90 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
-settings:
-  profile: PLUGINS
-  host: countdowntimer.stripo
-  postgresDb:
-    host: postgres
-    port: "5432"
-    username: user_countdowntimer
-    password: password_countdowntimer
-    databaseName: countdowntimer
-    connectionMinPoolSize: 5
-    connectionMaxPoolSize: 10
-
+# Environment variables for CountdownTimer application
+env:
+  # Application identity
+  - name: APPNAME
+    value: countdowntimer
+  - name: ENV
+    value: PLUGINS
+  - name: PROFILE
+    value: PLUGINS
+  
+  # Database configuration (CRITICAL)
+  - name: DB_NAME
+    value: countdowntimer
+  - name: DB_HOST
+    value: pg-example.com
+  - name: DB_PORT
+    value: "5432"
+  - name: DB_USER
+    value: user_countdowntimer
+  - name: DB_PASSWORD
+    value: password_countdowntimer
+  - name: DB_MIN_POOL_SIZE
+    value: "5"
+  - name: DB_MAX_POOL_SIZE
+    value: "10"
+  
+  # Security (CRITICAL)
+  - name: SECRET_KEY
+    value: "your_jwt_secret_key_here"
+  
+  # Core application settings (CRITICAL)
+  - name: PROD
+    value: "true"
+  - name: HOST
+    value: countdowntimer.stripo
+  - name: VERSION
+    value: "1.0.0"
+  
+  # File system paths (CRITICAL)
+  - name: FONT_UPLOAD_FOLDER
+    value: "/usr/local/countdowntimer/fonts/"
+  - name: GIF_FOLDER
+    value: "/opt/sources"
+  - name: UPLOAD_FOLDER
+    value: "/opt/uploads"
+  - name: RESOURCES_DIR
+    value: "/usr/local/countdowntimer/resources/"
+  - name: CACHE_LIFETIME
+    value: "30"
+  - name: GIF_URL
+    value: "/api-files/"
+  - name: UPLOAD_URL
+    value: "/api-uploads/"
+  
+  # Optional features
+  - name: USE_HTTPS
+    value: "true"
+  - name: VIEW_COUNT_INACTIVE
+    value: "false"
+  
+  # Callback system (optional)
+  - name: CALLBACK_URL
+    value: "https://your-api.com/callback"
+  - name: CALLBACK_USER
+    value: "callback_user"
+  - name: CALLBACK_PASSWORD
+    value: "callback_password"
+  - name: CALLBACK_SOURCE
+    value: "PLUGIN"
+  
+  # Plugin system
+  - name: PLUGIN_PATCHES
+    value: "true"
+  - name: COUNTDOWNTIMER
+    value: "latest"
+  
+  # Logging
+  - name: LOGSTASH_HOST
+    value: "logstash.example.com"
+  - name: LOGSTASH_PORT
+    value: "5008"
+  
 volume:
-  enabled: true
+  enabled: false
   storageClass:
     enabled: false
     className: gp2
