@@ -66,6 +66,14 @@ for entry in "${databases_users[@]}"; do
   psql -h $HOST -p $PORT -U $USER -d "$db" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO $user;"
   # This sets default privileges, so any future tables created in the schema `public` will automatically have full privileges for the specific user in their own database.
 
+  # Grant privileges to sequences for the specific user in their own database
+  psql -h $HOST -p $PORT -U $USER -d "$db" -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO $user;"
+  # This grants usage and select privileges on all sequences in the public schema to the specific user in their own database.
+
+  # Set default privileges for future sequences for the specific user in their own database
+  psql -h $HOST -p $PORT -U $USER -d "$db" -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO $user;"
+  # This sets default privileges, so any future sequences created in the schema `public` will automatically have usage and select privileges for the specific user in their own database.
+
   echo "Privileges applied to $db for user: $user"  # Confirmation message indicating that privileges have been applied to the current database for the specific user.
 done
 
