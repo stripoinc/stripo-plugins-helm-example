@@ -2,6 +2,22 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of September 26, 2025
+
+### Key Changes
+
+- Hardened `countdowntimer` security. Added support to run the microservice as a non‑root user via `securityContext.runAsUser: 1000`.
+
+### Action Required
+- **Update Helm repository**:
+```shell
+helm repo update stripo
+```
+
+- If you maintain a custom configuration for `countdowntimer`, please update it as follows:
+   - Change the `ClusterIP` service port from 80 to 8080.
+   - In the `stripo-timer-api` ConfigMap, update the `timer.url` property to `http://countdowntimer:8080/api/` to match the new port.
+
 ## Update as of October 25, 2024
 
 ### Helm Charts
