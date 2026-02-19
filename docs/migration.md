@@ -2,6 +2,25 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of February 19, 2026
+
+### Key Changes
+
+- Hardened `emple-ui` security:
+  - Container now runs as a non-root user (`app` user instead of `root`).
+  - Changed the container port from 80 to 8080.
+
+### Action Required
+
+- **Update Helm repository**:
+```shell
+helm repo update stripo
+```
+
+- If you maintain a custom configuration for `emple-ui`, please update it as follows:
+   - The container now listens on port 8080 instead of 80. Ensure the `containerPort` in your deployment is set to 8080.
+   - Optionally, enforce non-root execution at the Kubernetes level by adding `securityContext.runAsNonRoot: true` to your deployment configuration.
+
 ## Update as of September 26, 2025
 
 ### Key Changes
