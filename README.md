@@ -199,6 +199,8 @@ Below is a list of microservices that require individual PostgreSQL databases:
 
 You can find the script template for database creation at: `./resources/postgres/01_create_databases.sh`.
 
+> **Note:** You can use **AWS RDS Aurora PostgreSQL** instead of local PostgreSQL. See the [Migration Guide](./docs/migration.md) for Aurora setup with IAM authentication.
+
 ### Step 2: Insert Required Data into the PostgreSQL Database
 
 To start using the String editor in plugin mode, you first need to register a plugin in the database of `stripo-plugin-details-service`. This database contains a table named `plugins`.
