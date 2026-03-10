@@ -9,12 +9,11 @@ This document is designed to assist you in migrating your Stripo environment to 
 - Added support for **AWS Aurora PostgreSQL** with **IAM authentication** as an alternative to the default local PostgreSQL.
   - All plugin microservices can now connect to Aurora PostgreSQL using IAM-based authentication (no passwords required).
   - A new database initialization script `01_create_databases_iam.sh` has been added to automate the setup of databases, users, and IAM roles on Aurora.
-  - The `stripo-aurora-datasource-spring-boot-starter` library handles IAM token generation and SSL configuration automatically.
 
 ### [Action Required](http://stripoemail.com/)
 
 - If you want to use Aurora PostgreSQL with IAM authentication:
-  **Affected services** (require ConfigMap + Deployment changes):
+**Affected services** (require ConfigMap + Deployment changes):
   - `ai-service`
   - `countdowntimer`
   - `stripe-html-gen-service`
@@ -76,7 +75,7 @@ This document is designed to assist you in migrating your Stripo environment to 
     > This is the official AWS RDS root CA certificate bundle. It is used by `countdowntimer` to verify the Aurora server certificate when `DB_SSL_MODE: verify-full`.
   6. Update each service ConfigMap to point to Aurora with IAM settings.
     > **Note:** Skip `countdowntimer` here — it uses a different config format (see step 8).
-     Database and user mapping (from `01_create_databases_iam.sh`):
+    >  Database and user mapping (from `01_create_databases_iam.sh`):
 
     | Service                             | Database                           | Username            |
     | ----------------------------------- | ---------------------------------- | ------------------- |
