@@ -90,7 +90,15 @@ This document is designed to assist you in migrating your Stripo environment to 
     | stripo-security-service             | stripo_plugin_local_securitydb     | user_securitydb     |
     | stripo-timer-api                    | stripo_plugin_local_timers         | user_timers         |
 
-     ConfigMap properties for each Java/Spring service:
+    ConfigMap properties (add or replace in `application.properties`):
+    ```properties
+    spring.datasource.url=jdbc:postgresql://<aurora-endpoint>:5432/<database>?sslmode=require
+    spring.datasource.username=<user>
+    spring.datasource.password=
+    stripo.aurora.enabled=true
+    stripo.aurora.region=<aws-region>
+    ```
+    Use the table above for `<database>` and `<user>` values (e.g. for `stripe-html-gen-service`: database `stripo_plugin_local_html_gen`, user `user_html_gen`).
     > **Important:** Each property must be on its **own line**. Do not combine multiple properties on one line.
     > `spring.datasource.password` must be **empty** — the IAM token is generated at runtime.
     > If your ConfigMap contains both `application.properties` and `base.properties`, **both files must be synchronized** — `application.properties` overrides `base.properties`.
