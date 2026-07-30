@@ -12,14 +12,14 @@ This document is designed to assist you in migrating your Stripo environment to 
 
 ### Action Required
 
-- **Nothing to do if you stay on TiDB.** Existing installations keep working unchanged: when `settings.dbType` is absent or set to `TiDB`, the rendered Deployment is identical to previous chart versions.
+- **Nothing to do if you stay on TiDB.** Existing installations keep working unchanged. If `settings.dbType` is absent, the rendered Deployment is identical to previous chart versions. If you set it to `TiDB` explicitly, the same `TIDB_*` connection variables are rendered plus the service level `DB_READ_TARGET` and `DB_WRITE_TARGETS`, which does not change how the service behaves.
 - If you want to move `coediting-core-service` to Aurora MySQL, follow [Use AWS Aurora MySQL instead of TiDB](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#use-aws-aurora-mysql-instead-of-tidb-optional) in the deployment manual. In short:
   1. Create an Aurora MySQL 8.0+ cluster with `utf8mb4` / `utf8mb4_unicode_ci` and `max_allowed_packet = 268435456`.
   2. Create the database and a user with schema-level privileges.
   3. Create the RDS CA ConfigMap in your namespace:
     ```shell
-     curl -o global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-     kubectl create configmap coediting-core-service-rds-ca -n <namespace> --from-file=global-bundle.pem
+    curl -o global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+    kubectl create configmap coediting-core-service-rds-ca -n <namespace> --from-file=global-bundle.pem
     ```
   4. Set `settings.dbType` to `AuroraMySQL` and fill in the `settings.auroraMysql` block, including `tls.caBundleConfigMap`.
   5. Upgrade the service and verify that the pod has `DB_READ_TARGET=AuroraMySQL` and no `TIDB_*` variables.

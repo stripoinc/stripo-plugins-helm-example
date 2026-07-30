@@ -632,7 +632,6 @@ Notes:
 
 - `dbType` is **case-sensitive**: it must be exactly `AuroraMySQL` or `TiDB`. It is the only switch you need — the chart puts the matching connection settings into the pod and sets the service level `DB_READ_TARGET` and `DB_WRITE_TARGETS` variables for you.
 - You can leave the existing `tiDb` block in the file. While `dbType` is `AuroraMySQL` it is ignored, which makes switching back a one-line change.
-- `port` must be a number (`3306`), not a string (`"3306"`).
 - The `auroraMysql` block also accepts optional connection pool settings — `openConnections`, `idleConnections`, `connMaxLifetime`, `reconnectInterval` and `connectTimeout`. Leave them out unless you have a reason to tune the pool: the service defaults to 100 open and 25 idle connections, the same values it uses for TiDB.
 
 ##### Step E. Apply and verify
@@ -671,7 +670,9 @@ Set `dbType` back to `TiDB`, keep the `tiDb` block filled in, and run the same u
 | ------- | ----- | --- |
 | Pod stuck in `ContainerCreating`, event `configmap "coediting-core-service-rds-ca" not found` | ConfigMap from Step C is missing, misspelled, or in another namespace | Create it in the same namespace as the service |
 | TLS errors such as `x509: certificate signed by unknown authority` | The key inside the ConfigMap is not `global-bundle.pem`, or the file was truncated on download | Recreate the ConfigMap with `--from-file=global-bundle.pem` |
-| No `AURORA_MYSQL_*` variables in the pod, or `TIDB_*` variables are still present | `dbType` is not exactly `AuroraMySQL` (case-sensitive) | Fix the spelling and upgrade again |
+| `helm upgrade` fails with `settings.dbType must be "TiDB" or "AuroraMySQL"` | `dbType` is misspelled — the value is case-sensitive | Set it to exactly `AuroraMySQL` and upgrade again |
+| `helm upgrade` fails with `settings.auroraMysql is not set` | `dbType` is `AuroraMySQL` but the `auroraMysql` block is missing | Fill in the block from Step D |
+| No `AURORA_MYSQL_*` variables in the pod and `TIDB_*` variables are still present, upgrade reported no error | An old cached chart version (before 1.3.0) was installed | Run `helm repo update stripo` and upgrade again |
 | `Access denied for user 'coediting_user'` | Grants are missing, or the user was created without `REQUIRE SSL` while TLS is enforced | Re-run Step B |
 | `Packet for query is too large` | `max_allowed_packet` left at its default value | Apply Step A and reboot the instance |
 
