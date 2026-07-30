@@ -2,6 +2,30 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of July 30, 2026
+
+### Key Changes
+
+- Added support for **AWS Aurora MySQL** as an alternative to TiDB for `coediting-core-service` (Stripo Editor V2 only).
+  - The backend is selected with a single `settings.dbType` value in `charts/coediting-core-service.yaml` (`TiDB` or `AuroraMySQL`).
+  - The Helm chart now mounts the Amazon RDS CA bundle automatically when Aurora is selected, so no manual Deployment patching is needed for TLS.
+
+### Action Required
+
+- **Nothing to do if you stay on TiDB.** Existing installations keep working unchanged: when `settings.dbType` is absent or set to `TiDB`, the rendered Deployment is identical to previous chart versions.
+- If you want to move `coediting-core-service` to Aurora MySQL, follow [Use AWS Aurora MySQL instead of TiDB](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#use-aws-aurora-mysql-instead-of-tidb-optional) in the deployment manual. In short:
+  1. Create an Aurora MySQL 8.0+ cluster with `utf8mb4` / `utf8mb4_unicode_ci` and `max_allowed_packet = 268435456`.
+  2. Create the database and a user with schema-level privileges.
+  3. Create the RDS CA ConfigMap in your namespace:
+    ```shell
+     curl -o global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+     kubectl create configmap coediting-core-service-rds-ca -n <namespace> --from-file=global-bundle.pem
+    ```
+  4. Set `settings.dbType` to `AuroraMySQL` and fill in the `settings.auroraMysql` block, including `tls.caBundleConfigMap`.
+  5. Upgrade the service and verify that the pod has `DB_READ_TARGET=AuroraMySQL` and no `TIDB_*` variables.
+
+  > **Important:** switching the target does not copy existing data. Templates already stored in TiDB will not be available in Aurora. Contact the Stripo team to plan the data migration before switching a live installation.
+
 ## Update as of March 06, 2026
 
 ### Key Changes
