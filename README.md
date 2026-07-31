@@ -143,7 +143,7 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
   ```yaml
   server_name: “your_server_name”
   port: 4222
-  max_payload: 16777216
+  max_payload: 33554432
   jetstream {
       store_dir: /var/lib/nats/data
       max_mem: 1GB
@@ -159,6 +159,18 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
       ]
   }
   ```
+
+  If you deploy NATS using the [official NATS Helm chart](https://github.com/nats-io/k8s/tree/main/helm/charts/nats), set `max_payload` via `config.merge` in `values.yaml` and apply with `helm upgrade`:
+
+  ```yaml
+  config:
+    merge:
+      max_payload: 33554432 # 32 MiB
+  ```
+
+  After the change, restart or force a reconnect of `merge-service` and `coediting-core-service` — NATS clients cache `max_payload` from the initial connection handshake, so already-open connections keep enforcing the old limit until they reconnect.
+
+  With a higher `max_payload`, `merge-service` may process larger patch payloads in memory — increase its `resources.limits.memory` / `resources.requests.memory` to **6000Mi** and scale `NODE_OPTIONS --max-old-space-size` accordingly (~90% of the memory limit, i.e. `5400`) in `./charts/merge-service.yaml` (see [Step 5](#step-5-update-helm-chart-configurations)).
 
 6. **TiDB**: Version 7.5.0 or higher
 
