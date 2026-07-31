@@ -23,6 +23,7 @@
      - [Plugin Configuration Parameters](#plugin-configuration-parameters)
    - [Step 3: Additional steps to configure Stripo Editor V2 (for V2 only)](#step-3-additional-steps-to-configure-stripo-editor-v2-for-v2-only)
      - [Create TiDB Database](#create-tidb-database)
+     - [Use AWS Aurora MySQL instead of TiDB (optional)](#use-aws-aurora-mysql-instead-of-tidb-optional)
      - [Create NATS Account](#create-nats-account)
      - [Create an AWS ElastiCache Cluster](#create-an-aws-elasticache-cluster)
    - [Step 4: Configure Amazon S3 Bucket](#step-4-configure-amazon-s3-bucket)
@@ -174,6 +175,8 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
   tikv:
       raftstore.raft-entry-max-size: 64MB            #  The maximum size of a single Raft log entry in TiKV.    
 ```
+
+  > **Note:** TiDB is required for Stripo Editor V2 only, and it is not the only option. `coediting-core-service` can use an **AWS Aurora MySQL** cluster instead — see [Use AWS Aurora MySQL instead of TiDB](#use-aws-aurora-mysql-instead-of-tidb-optional). If you choose Aurora, you do not need to deploy a TiDB cluster at all.
 
 7. **Amazon ElastiCache**
 
@@ -548,6 +551,130 @@ tiup br restore full --pd "172.31.12.1:2379" --storage "local:///backup/full-yyy
 ```
 
 Follow the step-by-step instructions to set up your database correctly.
+
+#### Use AWS Aurora MySQL instead of TiDB (optional)
+
+`coediting-core-service` stores email templates and patches. By default it uses TiDB, but it can use an **AWS Aurora MySQL** cluster instead. This is optional and affects only this one microservice — nothing else in your deployment changes.
+
+Choose Aurora if you already run on AWS and prefer a managed database over maintaining a multi-node TiDB cluster yourself. If you pick Aurora, you can skip the whole [Create TiDB Database](#create-tidb-database) section above.
+
+> **Note for existing installations:** this switch only changes where the service reads and writes. The Helm chart does not copy any data, so templates already stored in TiDB will not appear in Aurora. If you are switching a live installation rather than setting up a new one, contact the Stripo team to plan the data migration first.
+
+**Requirements**
+
+- Aurora MySQL **8.0 or higher** (Stripo tests on 8.4), reachable from your Kubernetes cluster
+- The cluster security group must allow inbound TCP `3306` from your Kubernetes nodes
+- TLS is enabled by the `tls` block shown in Step D. Keep that block: without it the service connects **without encryption** and does so silently, with no error in the logs
+
+##### Step A. Configure the cluster parameters
+
+Aurora defaults are not suitable for email templates: templates can be large, and the editor requires case-insensitive UTF-8. Create custom parameter groups with the values below — otherwise you may hit `Packet for query is too large` errors or incorrect sorting.
+
+| Parameter | Value | Set in |
+| ---------------------- | --------------------- | ------------------------------ |
+| `character_set_server` | `utf8mb4` | DB **cluster** parameter group |
+| `collation_server` | `utf8mb4_unicode_ci` | DB **cluster** parameter group |
+| `time_zone` | `UTC` | DB **cluster** parameter group |
+| `max_allowed_packet` | `268435456` (256 MB) | DB **instance** parameter group |
+
+> MySQL 8 defaults `collation_server` to `utf8mb4_0900_ai_ci`, so it must be overridden explicitly.
+
+##### Step B. Create the database and the user
+
+Connect to the cluster **writer** endpoint and run:
+
+```sql
+CREATE DATABASE stripo_coediting_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'coediting_user'@'%' IDENTIFIED BY '<strong-password>' REQUIRE SSL;
+GRANT CREATE, DROP, ALTER, INDEX, REFERENCES,
+      INSERT, SELECT, UPDATE, DELETE,
+      CREATE TEMPORARY TABLES, LOCK TABLES,
+      CREATE VIEW, SHOW VIEW, EXECUTE, CREATE ROUTINE, ALTER ROUTINE, EVENT, TRIGGER
+  ON stripo_coediting_db.* TO 'coediting_user'@'%';
+FLUSH PRIVILEGES;
+```
+
+Schema-level privileges (`CREATE`, `ALTER`, `INDEX`) are required — the service manages its own tables.
+
+##### Step C. Create the CA certificate ConfigMap
+
+The service verifies the Aurora server certificate, so it needs the Amazon RDS root CA bundle. Download it and create a ConfigMap in the **same namespace** as your Stripo services:
+
+```shell
+curl -o global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+kubectl create configmap coediting-core-service-rds-ca -n <namespace> --from-file=global-bundle.pem
+```
+
+The key inside the ConfigMap must be named exactly `global-bundle.pem` — the command above does that for you. The Helm chart mounts it into the pod at `/etc/ssl/rds/global-bundle.pem`; you do not need to configure that path anywhere.
+
+> This is the official public AWS RDS root CA bundle. It contains no secrets and is the same file for every AWS account and region.
+
+##### Step D. Switch the service to Aurora
+
+In `charts/coediting-core-service.yaml`, set `dbType` to `AuroraMySQL` and fill in the `auroraMysql` block:
+
+```yaml
+settings:
+  dbType: AuroraMySQL
+
+  auroraMysql:
+    host: <cluster-writer-endpoint>   # e.g. my-cluster.cluster-ab12cd.eu-west-1.rds.amazonaws.com
+    port: 3306
+    username: coediting_user
+    password: <strong-password>
+    databaseName: stripo_coediting_db
+    tls:
+      mode: verify_identity
+      caBundleConfigMap: coediting-core-service-rds-ca   # ConfigMap name from Step C
+```
+
+Notes:
+
+- `dbType` is **case-sensitive**: it must be exactly `AuroraMySQL` or `TiDB`. It is the only switch you need — the chart puts the matching connection settings into the pod and sets the service level `DB_READ_TARGET` and `DB_WRITE_TARGETS` variables for you.
+- You can leave the existing `tiDb` block in the file. While `dbType` is `AuroraMySQL` it is ignored, which makes switching back a one-line change.
+- The `auroraMysql` block also accepts optional connection pool settings — `openConnections`, `idleConnections`, `connMaxLifetime`, `reconnectInterval` and `connectTimeout`. Leave them out unless you have a reason to tune the pool: the service defaults to 100 open and 25 idle connections, the same values it uses for TiDB.
+
+##### Step E. Apply and verify
+
+Deploy as usual with the script from [Step 8](#step-8-deploy-microservices), or directly:
+
+```shell
+helm upgrade --install coediting-core-service stripo/go-template-service \
+  -f charts/coediting-core-service.yaml --namespace <namespace>
+kubectl rollout status deploy/coediting-core-service --namespace <namespace>
+```
+
+Confirm the pod really received the Aurora settings:
+
+```shell
+kubectl exec deploy/coediting-core-service -n <namespace> -- \
+  env | grep -E 'DB_READ_TARGET|DB_WRITE_TARGETS|AURORA_MYSQL_HOST|AURORA_MYSQL_TLS_CA_FILE'
+```
+
+Expected output — and **no** `TIDB_*` variables at all:
+
+```
+DB_READ_TARGET=AuroraMySQL
+DB_WRITE_TARGETS=AuroraMySQL
+AURORA_MYSQL_HOST=<your cluster endpoint>
+AURORA_MYSQL_TLS_CA_FILE=/etc/ssl/rds/global-bundle.pem
+```
+
+##### Switching back to TiDB
+
+Set `dbType` back to `TiDB`, keep the `tiDb` block filled in, and run the same upgrade command. The `auroraMysql` block and the CA ConfigMap can stay in place — they are ignored.
+
+##### Troubleshooting
+
+| Symptom | Cause | Fix |
+| ------- | ----- | --- |
+| Pod stuck in `ContainerCreating`, event `configmap "coediting-core-service-rds-ca" not found` | ConfigMap from Step C is missing, misspelled, or in another namespace | Create it in the same namespace as the service |
+| TLS errors such as `x509: certificate signed by unknown authority` | The key inside the ConfigMap is not `global-bundle.pem`, or the file was truncated on download | Recreate the ConfigMap with `--from-file=global-bundle.pem` |
+| `helm upgrade` fails with `settings.dbType must be "TiDB" or "AuroraMySQL"` | `dbType` is misspelled — the value is case-sensitive | Set it to exactly `AuroraMySQL` and upgrade again |
+| `helm upgrade` fails with `settings.auroraMysql is not set` | `dbType` is `AuroraMySQL` but the `auroraMysql` block is missing | Fill in the block from Step D |
+| No `AURORA_MYSQL_*` variables in the pod and `TIDB_*` variables are still present, upgrade reported no error | An old cached chart version (before 1.3.0) was installed | Run `helm repo update stripo` and upgrade again |
+| `Access denied for user 'coediting_user'` | Grants are missing, or the user was created without `REQUIRE SSL` while TLS is enforced | Re-run Step B |
+| `Packet for query is too large` | `max_allowed_packet` left at its default value | Apply Step A and reboot the instance |
 
 #### Create NATS Account
 

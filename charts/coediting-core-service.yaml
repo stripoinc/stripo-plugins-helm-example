@@ -35,12 +35,33 @@ settings:
     goMaxProcs: "2"
     # Depends on memory limit (~90%). 600 for 700m
     goMemLimit: 600MiB
+
+  # Active storage backend switch. Valid values: "TiDB" (default) or "AuroraMySQL".
+  dbType: TiDB
+
   tiDb:
     host: db_host
     port: 4000
     username: db_user
     password: db_password
     databaseName: stripo_coediting_db
+
+  auroraMysql:
+    host: db_host
+    port: 3306
+    username: db_user
+    password: db_password
+    databaseName: stripo_coediting_db
+    tls:
+      mode: verify_identity
+      caBundleConfigMap: coediting-core-service-rds-ca
+
+# Background copying of data between databases. Only takes effect in multi-database
+# setups, which this chart does not produce, so the service defaults (false) apply.
+#  dbMigration:
+#    enabled: false
+#    missingDataEnabled: false
+
   nats:
     url: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
     user: nats_user
