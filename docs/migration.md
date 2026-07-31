@@ -2,7 +2,7 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
-## Update as of July 30, 2026
+## Update as of July 31, 2026
 
 ### Key Changes
 
