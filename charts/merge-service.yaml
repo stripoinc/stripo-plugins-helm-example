@@ -31,6 +31,7 @@ settings:
     url: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
     user: nats_user
     password: nats_password
+    maxPayloadSizeToIncludeInMsg: "31457280"
   redis:
     #    clusterUrl: "example-redis-001.euw1.cache.amazonaws.com:6379,example-redis-002.euw1.cache.amazonaws.com:6379"
     host: redis-master

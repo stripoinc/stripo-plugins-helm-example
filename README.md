@@ -172,6 +172,10 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
 
   With a higher `max_payload`, `merge-service` may process larger patch payloads in memory — increase its `resources.limits.memory` / `resources.requests.memory` to **6000Mi** and scale `NODE_OPTIONS --max-old-space-size` accordingly (~90% of the memory limit, i.e. `5400`) in `./charts/merge-service.yaml` (see [Step 5](#step-5-update-helm-chart-configurations)).
 
+  In addition to `max_payload`, set `settings.nats.maxPayloadSizeToIncludeInMsg: "31457280"` (30 MiB) on **both** `merge-service` and `coediting-core-service` (see `./charts/merge-service.yaml` and `./charts/coediting-core-service.yaml`; rendered as the `NATS_MAX_PAYLOAD_SIZE_TO_INCLUDE_IN_MSG` environment variable). It enables offloading of messages larger than this size through Object Storage instead of sending them inline over NATS. The value must be identical on both services and slightly lower than the NATS `max_payload` (the 32 MiB / 30 MiB pair). This setting takes effect starting from the release that enables reading it from the environment; on earlier versions it is ignored and `merge-service` logs `object store is not configured, skipping initialization` at startup.
+
+  To keep large emails opening fast, also consider lowering `settings.numberOfPatchesToStartCompaction` on `coediting-core-service` (service default `100`, recommended `10`–`20`; rendered as the `NUMBER_OF_PATCHES_TO_START_COMPACTION` environment variable) — the number of accumulated patches that triggers server-side model compaction. A lower value means more frequent compaction and faster email opening. See the [Migration Guide](docs/migration.md#editor-performance-for-large-emails) for details.
+
 6. **TiDB**: Version 7.5.0 or higher
 
 - TiDB is a distributed SQL database that offers scalability and strong consistency. You can install TiDB by following the official guide: [TiDB Installation](https://docs.pingcap.com/tidb/stable/quick-start-with-tidb/)
