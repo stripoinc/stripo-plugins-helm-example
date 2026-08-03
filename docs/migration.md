@@ -2,6 +2,222 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of August 03, 2026
+
+### Key Changes
+
+- The current `coediting-core-service` release contains database schema migrations (11–19). One of them alters the large `models` table and **can take a long time** on installations with a lot of data. If the migration does not finish before the pod is restarted or killed, the service is left in a broken migration state and will not start.
+- New performance tuning options for large emails: NATS large-message offload via Object Storage and server-side patch compaction frequency (see [Editor performance for large emails](#editor-performance-for-large-emails)).
+
+### Action Required
+
+#### Long-running schema migration in coediting-core-service
+
+**Why this matters.** `coediting-core-service` applies schema migrations automatically at startup. Migration 11 runs `ALTER TABLE models ADD COLUMN theme_id ..., theme_version ...` plus an index — on a large `models` table this can run for a long time. If the pod is killed before the migration completes (startup/readiness timeout):
+
+- the `ALTER` keeps running inside the database even though the pod is gone;
+- `golang-migrate` leaves `schema_migrations` with `dirty = true`;
+- the service will not become ready again, and **pod restarts do not heal the dirty state** — the environment stays down until you intervene manually.
+
+**Recommended upgrade procedure (before the release):**
+
+1. Verify the current migration state — the script assumes the previous release is fully applied:
+
+   ```sql
+   SELECT version, dirty FROM schema_migrations;
+   ```
+
+   The result must be `version = 10, dirty = 0`. If the version is lower, upgrade to the previous release first (or apply the missing migrations manually) — the script below unconditionally sets `version = 19`, so running it on an older schema would mark the skipped migrations as applied without executing them. If `dirty = 1`, resolve the dirty state first (see "Recovery: the automatic migration already failed" below).
+2. Run the SQL script below manually against the `coediting-core-service` database and wait for it to complete. It contains all migrations of this release (11–19) and finishes by marking them as applied in `schema_migrations`, so the automatic migration at startup becomes a no-op.
+3. Upgrade the environment as usual.
+
+> Running the script against a live installation is safe: all added columns have defaults and do not affect running pods.
+
+> **Important:** the migration SQL does not use `IF NOT EXISTS`. Run the manual script **either completely or not at all**, and only before the automatic migration has been attempted. If you apply the schema changes manually but do not update `schema_migrations`, the service will retry migration 11 at startup, fail with a duplicate column/index error, and end up in the dirty state described below.
+
+> **TiDB only:** the script below uses TiDB-specific syntax (`PRIMARY KEY ... NONCLUSTERED`) and will not run on plain MySQL. It matches the TiDB migration set of `coediting-core-service` — the one used by Stripo V2 plugins installations, which run on TiDB (see [Prerequisites](../README.md#prerequisites)). Do not run it against any other database flavor.
+
+<details>
+<summary>Manual migration script (migrations 11–19, TiDB only)</summary>
+
+```sql
+-- Migration 11
+CREATE TABLE themes (
+    id VARCHAR(36) NOT NULL PRIMARY KEY NONCLUSTERED,
+    name VARCHAR(100) NOT NULL,
+    val JSON NOT NULL,
+    version BIGINT NOT NULL,
+    updated_at TIMESTAMP(6) NOT NULL,
+    INDEX idx_themes_updated_at (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE theme_keys (
+    theme_id VARCHAR(36) NOT NULL,
+    `key` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (theme_id, `key`) NONCLUSTERED,
+    INDEX idx_theme_keys_key (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE models
+    ADD COLUMN theme_id VARCHAR(36),
+    ADD COLUMN theme_version BIGINT;
+
+ALTER TABLE models
+    ADD INDEX idx_models_theme (theme_id);
+
+
+-- Migration 12
+ALTER TABLE themes
+    ADD COLUMN preview TEXT NULL;
+
+
+-- Migration 13
+CREATE TABLE template_theme_quota_locks (
+    key_prefix VARCHAR(255) NOT NULL PRIMARY KEY NONCLUSTERED
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Migration 14
+CREATE TABLE model_patch_revisions (
+    model_id VARCHAR(255) NOT NULL PRIMARY KEY,
+    revision BIGINT UNSIGNED NOT NULL DEFAULT 0
+);
+
+CREATE TABLE copilot_patch_outbox (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    operation_id VARCHAR(36) NOT NULL,
+    model_id VARCHAR(255) NOT NULL,
+    payload LONGBLOB NOT NULL,
+    patch_originated_at TIMESTAMP(6) NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    available_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    lease_owner VARCHAR(255),
+    lease_until TIMESTAMP(6),
+    attempt_count INT NOT NULL DEFAULT 0,
+    published_at TIMESTAMP(6),
+    replicas_repaired_at TIMESTAMP(6),
+    failed_at TIMESTAMP(6),
+    failure_reason VARCHAR(1024),
+    UNIQUE INDEX uq_copilot_patch_outbox_operation (operation_id),
+    INDEX idx_copilot_patch_outbox_available (
+        available_at,
+        lease_until,
+        created_at
+    )
+);
+
+CREATE TABLE copilot_patch_replica_receipts (
+    operation_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    model_id VARCHAR(255) NOT NULL,
+    applied_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    completed_at TIMESTAMP(6),
+    INDEX idx_copilot_patch_replica_receipts_model (model_id),
+    INDEX idx_copilot_patch_replica_receipts_completed (completed_at)
+);
+
+
+-- Migration 15
+CREATE INDEX idx_copilot_patch_outbox_model
+    ON copilot_patch_outbox (model_id);
+
+
+-- Migration 16
+CREATE TABLE copilot_patch_replica_receipts_v2 (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    operation_id VARCHAR(36) NOT NULL,
+    model_id VARCHAR(255) NOT NULL,
+    applied_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    completed_at TIMESTAMP(6),
+    UNIQUE INDEX uq_copilot_patch_replica_receipts_operation (operation_id),
+    INDEX idx_copilot_patch_replica_receipts_model (model_id),
+    INDEX idx_copilot_patch_replica_receipts_completed (completed_at)
+);
+
+INSERT INTO copilot_patch_replica_receipts_v2 (
+    operation_id,
+    model_id,
+    applied_at,
+    completed_at
+)
+SELECT
+    operation_id,
+    model_id,
+    applied_at,
+    completed_at
+FROM copilot_patch_replica_receipts;
+
+RENAME TABLE
+    copilot_patch_replica_receipts
+        TO copilot_patch_replica_receipts_common_handle,
+    copilot_patch_replica_receipts_v2
+        TO copilot_patch_replica_receipts;
+
+DROP TABLE copilot_patch_replica_receipts_common_handle;
+
+
+-- Migration 17
+CREATE TABLE copilot_patch_commit_ledger (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    operation_id VARCHAR(36) NOT NULL,
+    model_id VARCHAR(255) NOT NULL,
+    expected_revision BIGINT UNSIGNED NOT NULL,
+    payload_sha256 BINARY(32) NOT NULL,
+    committed_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    UNIQUE INDEX uq_copilot_patch_commit_ledger_operation (operation_id),
+    INDEX idx_copilot_patch_commit_ledger_model (model_id)
+);
+
+
+-- Migration 18
+CREATE INDEX idx_copilot_patch_outbox_lease_owner
+    ON copilot_patch_outbox (lease_owner);
+
+
+-- Migration 19
+ALTER TABLE patches
+    ADD COLUMN name VARCHAR(60) NULL;
+
+CREATE TABLE patch_tags (
+    model_id VARCHAR(255) NOT NULL,
+    patch_id VARCHAR(36) NOT NULL,
+    position INT UNSIGNED NOT NULL,
+    tag VARCHAR(60) NOT NULL,
+    PRIMARY KEY (model_id, patch_id, position) NONCLUSTERED,
+    INDEX idx_patch_tags_model_tag (model_id, tag, patch_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Mark whole bundle as successfully applied
+UPDATE schema_migrations
+SET version = 19,
+    dirty = FALSE;
+```
+
+</details>
+
+**Recovery: the automatic migration already failed.**
+
+1. **Wait for the running migration to finish inside the database.** Even if the pod was killed by a timeout, the started `ALTER TABLE` keeps running in the database. Do not restart the migration on top of it.
+2. Check the service logs to find which migration failed and confirm its statements actually completed. (So far each migration file has no critical mid-file failure points — the index creation goes last — but verify against the logs for your case.)
+3. In the `schema_migrations` table set `dirty` to `false` and **do not change** `version`. The library writes the version of the migration it is about to run *before* executing it, so after a failure `version` already points at the failed migration (e.g. `version = 11, dirty = TRUE`); clearing the flag marks it as applied, and the next run continues from the following one:
+
+   ```sql
+   UPDATE schema_migrations SET dirty = FALSE;
+   ```
+
+   > Only do this after confirming in step 2 that the failed migration's statements actually completed. If they did not, finish them manually first (using the corresponding part of the script above) — clearing `dirty` alone would mark a half-applied migration as applied.
+4. Re-run the environment upgrade. The remaining migrations will be applied automatically.
+
+#### Editor performance for large emails
+
+Large emails with many accumulated (non-compacted) patches open slowly and, in the worst case, hit the NATS message size limit: `merge-service` successfully merges the patches, but its reply is too large to deliver, `coediting-core-service` waits for a 10-minute timeout, and the email keeps opening slowly with patches accumulating further. Three settings work together to prevent this:
+
+1. **NATS `max_payload` = 32 MiB** — already covered in the deployment manual, see [Prerequisites → NATS](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#prerequisites). Remember to restart or reconnect `merge-service` and `coediting-core-service` after changing it: NATS clients cache the limit from the connection handshake.
+2. **`settings.nats.maxPayloadSizeToIncludeInMsg: "31457280"`** (30 MiB) — enables offloading of oversized NATS messages through Object Storage instead of sending them inline. Set it on **both** `merge-service` **and** `coediting-core-service` (`charts/merge-service.yaml` and `charts/coediting-core-service.yaml`) with the **same value** (a mismatch between the two services will cause message-processing failures). The value must be slightly lower than the NATS `max_payload` (the 32 MiB / 30 MiB pair above). Rendered as the `NATS_MAX_PAYLOAD_SIZE_TO_INCLUDE_IN_MSG` environment variable; requires chart version 1.3.1+.
+3. **`settings.numberOfPatchesToStartCompaction`** — a `coediting-core-service` setting (`charts/coediting-core-service.yaml`) that controls how many accumulated patches trigger server-side model compaction. The service default is `100`, which lets emails accumulate hundreds of non-compacted patches and makes them open for tens of seconds. Recommended value: **20** — a lower value means more frequent compaction and faster email opening. Rendered as the `NUMBER_OF_PATCHES_TO_START_COMPACTION` environment variable; requires chart version 1.3.1+.
+
+**If problematic emails already exist** (patches accumulated while the NATS limit was being hit): temporarily increase `merge-service` memory resources, open each affected email to trigger compaction (opening an email is also a compaction trigger; re-check after ~15 minutes), then scale the resources back down.
+
 ## Update as of July 31, 2026
 
 ### Key Changes
