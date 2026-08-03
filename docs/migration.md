@@ -21,8 +21,15 @@ This document is designed to assist you in migrating your Stripo environment to 
 
 **Recommended upgrade procedure (before the release):**
 
-1. Before upgrading, run the SQL script below manually against the `coediting-core-service` database and wait for it to complete. It contains all migrations of this release (11–19) and finishes by marking them as applied in `schema_migrations`, so the automatic migration at startup becomes a no-op.
-2. Upgrade the environment as usual.
+1. Verify the current migration state — the script assumes the previous release is fully applied:
+
+   ```sql
+   SELECT version, dirty FROM schema_migrations;
+   ```
+
+   The result must be `version = 10, dirty = 0`. If the version is lower, upgrade to the previous release first (or apply the missing migrations manually) — the script below unconditionally sets `version = 19`, so running it on an older schema would mark the skipped migrations as applied without executing them. If `dirty = 1`, resolve the dirty state first (see "Recovery: the automatic migration already failed" below).
+2. Run the SQL script below manually against the `coediting-core-service` database and wait for it to complete. It contains all migrations of this release (11–19) and finishes by marking them as applied in `schema_migrations`, so the automatic migration at startup becomes a no-op.
+3. Upgrade the environment as usual.
 
 > Running the script against a live installation is safe: all added columns have defaults and do not affect running pods.
 
