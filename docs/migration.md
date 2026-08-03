@@ -35,8 +35,10 @@ This document is designed to assist you in migrating your Stripo environment to 
 
 > **Important:** the migration SQL does not use `IF NOT EXISTS`. Run the manual script **either completely or not at all**, and only before the automatic migration has been attempted. If you apply the schema changes manually but do not update `schema_migrations`, the service will retry migration 11 at startup, fail with a duplicate column/index error, and end up in the dirty state described below.
 
+> **TiDB only:** the script below uses TiDB-specific syntax (`PRIMARY KEY ... NONCLUSTERED`) and will not run on plain MySQL. It matches the TiDB migration set of `coediting-core-service` — the one used by Stripo V2 plugins installations, which run on TiDB (see [Prerequisites](../README.md#prerequisites)). Do not run it against any other database flavor.
+
 <details>
-<summary>Manual migration script (migrations 11–19)</summary>
+<summary>Manual migration script (migrations 11–19, TiDB only)</summary>
 
 ```sql
 -- Migration 11
