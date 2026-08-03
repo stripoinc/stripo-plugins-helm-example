@@ -190,7 +190,13 @@ SET version = 19,
 
 1. **Wait for the running migration to finish inside the database.** Even if the pod was killed by a timeout, the started `ALTER TABLE` keeps running in the database. Do not restart the migration on top of it.
 2. Check the service logs to find which migration failed and confirm its statements actually completed. (So far each migration file has no critical mid-file failure points — the index creation goes last — but verify against the logs for your case.)
-3. In the `schema_migrations` table set `version` to the failed version **+ 1** and `dirty` to `false` (the migration library increments the version only after a successful run, so after a failure it still points at the failed migration). For example, if the migration failed on version 11, set `version = 12, dirty = FALSE`.
+3. In the `schema_migrations` table set `dirty` to `false` and **do not change** `version`. The library writes the version of the migration it is about to run *before* executing it, so after a failure `version` already points at the failed migration (e.g. `version = 11, dirty = TRUE`); clearing the flag marks it as applied, and the next run continues from the following one:
+
+   ```sql
+   UPDATE schema_migrations SET dirty = FALSE;
+   ```
+
+   > Only do this after confirming in step 2 that the failed migration's statements actually completed. If they did not, finish them manually first (using the corresponding part of the script above) — clearing `dirty` alone would mark a half-applied migration as applied.
 4. Re-run the environment upgrade. The remaining migrations will be applied automatically.
 
 #### Editor performance for large emails
@@ -198,8 +204,8 @@ SET version = 19,
 Large emails with many accumulated (non-compacted) patches open slowly and, in the worst case, hit the NATS message size limit: `merge-service` successfully merges the patches, but its reply is too large to deliver, `coediting-core-service` waits for a 10-minute timeout, and the email keeps opening slowly with patches accumulating further. Three settings work together to prevent this:
 
 1. **NATS `max_payload` = 32 MiB** — already covered in the deployment manual, see [Prerequisites → NATS](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#prerequisites). Remember to restart or reconnect `merge-service` and `coediting-core-service` after changing it: NATS clients cache the limit from the connection handshake.
-2. **`settings.nats.maxPayloadSizeToIncludeInMsg: "31457280"`** (30 MiB) — enables offloading of oversized NATS messages through Object Storage instead of sending them inline. Set it on **both** `merge-service` **and** `coediting-core-service` (`charts/merge-service.yaml` and `charts/coediting-core-service.yaml`) with the **same value** (a mismatch between the two services will cause message-processing failures). The value must be slightly lower than the NATS `max_payload` (the 32 MiB / 30 MiB pair above). Rendered as the `NATS_MAX_PAYLOAD_SIZE_TO_INCLUDE_IN_MSG` environment variable; requires chart version 1.2.1+.
-3. **`settings.numberOfPatchesToStartCompaction`** — a `coediting-core-service` setting (`charts/coediting-core-service.yaml`) that controls how many accumulated patches trigger server-side model compaction. The service default is `100`, which lets emails accumulate hundreds of non-compacted patches and makes them open for tens of seconds. Recommended value: **20** — a lower value means more frequent compaction and faster email opening. Rendered as the `NUMBER_OF_PATCHES_TO_START_COMPACTION` environment variable; requires chart version 1.2.1+.
+2. **`settings.nats.maxPayloadSizeToIncludeInMsg: "31457280"`** (30 MiB) — enables offloading of oversized NATS messages through Object Storage instead of sending them inline. Set it on **both** `merge-service` **and** `coediting-core-service` (`charts/merge-service.yaml` and `charts/coediting-core-service.yaml`) with the **same value** (a mismatch between the two services will cause message-processing failures). The value must be slightly lower than the NATS `max_payload` (the 32 MiB / 30 MiB pair above). Rendered as the `NATS_MAX_PAYLOAD_SIZE_TO_INCLUDE_IN_MSG` environment variable; requires chart version 1.3.1+.
+3. **`settings.numberOfPatchesToStartCompaction`** — a `coediting-core-service` setting (`charts/coediting-core-service.yaml`) that controls how many accumulated patches trigger server-side model compaction. The service default is `100`, which lets emails accumulate hundreds of non-compacted patches and makes them open for tens of seconds. Recommended value: **20** — a lower value means more frequent compaction and faster email opening. Rendered as the `NUMBER_OF_PATCHES_TO_START_COMPACTION` environment variable; requires chart version 1.3.1+.
 
 **If problematic emails already exist** (patches accumulated while the NATS limit was being hit): temporarily increase `merge-service` memory resources, open each affected email to trigger compaction (opening an email is also a compaction trigger; re-check after ~15 minutes), then scale the resources back down.
 
