@@ -1,0 +1,37 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+resources:
+  limits:
+    memory: 1000Mi
+    cpu: 1000m
+  requests:
+    memory: 512Mi
+    cpu: 100m
+
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+
+env:
+  - name: AUTH_PROVIDER_HOST
+    value: http://stripo-plugin-api-gateway:8080/api/v1/convo/inner/
+  - name: DATABASE_URL
+    value: postgresql://user_widgets_chat_history:password_widgets_chat_history@postgres:5432/stripo_plugin_local_widgets_chat_history
+  - name: STRIPO_WIDGET_PROMPT_ENDPOINT
+    value: http://ui-editor-widgets-registry-service:8080/api/v1/widgets/{widgetId}/prompt
+  - name: OPENAI_API_KEY
+    value: my-openai-api-key
+
+configmap:
+  enabled: false

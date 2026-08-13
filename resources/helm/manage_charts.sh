@@ -74,6 +74,8 @@ services=(
   "stripo-plugin-statistics-service"
   "stripo-timer-api"
   "ai-service"
+  "ui-editor-widgets-registry-service"
+  "convo-core-chat-server"
 
   #---------------------------------------------------
   # Comment to run ONLY Stripo editor V2 microservices

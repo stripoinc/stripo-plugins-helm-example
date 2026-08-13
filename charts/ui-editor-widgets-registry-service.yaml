@@ -41,5 +41,4 @@ configmap:
       spring.datasource.password=password_widgets_registry
       shared.modules.mode=follower
       shared.modules.owner.base-url=https://my.stripo.email/bapi/widgets/registry
-      shared.modules.sse.enabled=true
       shared.modules.auth.client.api-key=my-api-key

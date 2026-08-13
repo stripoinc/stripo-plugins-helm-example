@@ -25,6 +25,8 @@ databases_users=(
   "stripo_plugin_local_timers user_timers password_timers"
   "countdowntimer user_countdowntimer password_countdowntimer"
   "ai_service user_ai_service password_ai_service"
+  "stripo_plugin_local_widgets_registry user_widgets_registry password_widgets_registry"
+  "stripo_plugin_local_widgets_chat_history user_widgets_chat_history password_widgets_chat_history"
 )
 
 # Step 1: Create databases, users, and assign privileges
