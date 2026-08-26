@@ -35,6 +35,16 @@
    - [Step 8: Deploy Microservices](#step-8-deploy-microservices)
    - [Step 9: Configure Countdown Timer](#step-9-configure-countdown-timer)
    - [Step 10: Configure CDN for Static Resources](#step-10-configure-cdn-for-static-resources)
+   - [Step 11: Configure AI Widgets (for V2 only)](#step-11-configure-ai-widgets-for-v2-only)
+     - [Create the Databases](#create-the-databases)
+     - [Configure the Widgets Registry Service](#configure-the-widgets-registry-service)
+     - [Configure the Chat Server](#configure-the-chat-server)
+     - [Route the API Gateway to Both Services](#route-the-api-gateway-to-both-services)
+     - [Enable the Shared Widget Catalog](#enable-the-shared-widget-catalog)
+     - [Enable Widgets for Your Plugin](#enable-widgets-for-your-plugin)
+     - [Allow Long-Lived Streaming Responses](#allow-long-lived-streaming-responses)
+     - [Host the Widgets Panel Bundle](#host-the-widgets-panel-bundle)
+     - [Verify the Setup](#verify-the-setup)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -67,7 +77,7 @@ The Stripo ecosystem consists of several key components, each playing a crucial 
 
 ## Microservices Architecture Overview
 
-The Plugin infrastructure is composed of 20 microservices, each containerized using Docker. These Docker images are hosted in Stripo's Docker Hub repository. Enterprise plan partners are granted read-only access to this repository, allowing them to download the required images with specific versions when they choose to host the Plugin Backend on their own servers.
+The Plugin infrastructure is composed of 22 microservices, each containerized using Docker. These Docker images are hosted in Stripo's Docker Hub repository. Enterprise plan partners are granted read-only access to this repository, allowing them to download the required images with specific versions when they choose to host the Plugin Backend on their own servers.
 
 ### Microservice Dependencies
 
@@ -103,6 +113,8 @@ The table below outlines the current microservices, their roles, and their requi
 | **coediting-core-service**              | Acts as a coediting API gateway and stores email templates and autosave patches.                       | true         | false           | true            |
 | **env-adapter-service**                 | Manages coediting user authentication and checks editor permissions.                                   | false        | false           | true            |
 | **merge-service**                       | Applies autosave patches to email templates.                                                           | false        | false           | true            |
+| **ui-editor-widgets-registry-service**  | Stores AI widget definitions and syncs the shared widget catalog from Stripo.                          | false        | false           | true            |
+| **convo-core-chat-server**              | Runs the AI conversation that generates and edits widget content.                                      | false        | false           | true            |
 
 ### Notes:
 
@@ -215,6 +227,8 @@ Below is a list of microservices that require individual PostgreSQL databases:
 - `stripo-plugin-image-bank-service`
 - `stripe-html-gen-service`
 - `stripo-security-service`
+- `ui-editor-widgets-registry-service` (AI Widgets, V2 only — see [Step 11](#step-11-configure-ai-widgets-for-v2-only))
+- `convo-core-chat-server` (AI Widgets, V2 only — see [Step 11](#step-11-configure-ai-widgets-for-v2-only))
 
 You can find the script template for database creation at: `./resources/postgres/01_create_databases.sh`.
 
@@ -364,6 +378,9 @@ This section provides an overview of the configuration parameters for the plugin
 | `editorPermissionsApi.url`                      | String (URL) | URL for the Editor Permissions API endpoint.                                                                                                  |
 | `editorPermissionsApi.username`                 | String       | Username for Editor Permissions API authentication.                                                                                           |
 | `editorPermissionsApi.password`                 | String       | Password for Editor Permissions API authentication.                                                                                           |
+| `firstPartyExtensions.widgetsEnabled`           | Boolean      | Enables the AI Widgets panel in the editor V2 (default:`false`). See[Step 11](#step-11-configure-ai-widgets-for-v2-only).                  |
+| `firstPartyExtensions.openaiApiKey`             | String       | OpenAI API key used by the AI Widgets chat. Never sent to the browser.                                                                         |
+| `firstPartyExtensions.chatkitDomainPublicKey`   | String       | Public key from your OpenAI domain allowlist; lets ChatKit run on the domains where the editor is embedded. Used in the browser, not a secret.  |
 
 ### Step 3: Additional steps to configure Stripo Editor V2 (for V2 only)
 
@@ -930,6 +947,197 @@ Please note while caching these files on your server is beneficial, the `stripo.
 #### Stripo Editor V2
 
 You can find detailed instructions [here](https://plugin.stripo.email/hosting-stripo-editor-files-on-your-own-cdn).
+
+### Step 11: Configure AI Widgets (for V2 only)
+
+**AI Widgets** add an assistant panel to the Stripo Editor V2. Instead of filling in a form, the user picks a widget — an interactive block such as a scratcher or a poll — and configures it in a chat conversation. The feature is available in **Stripo Editor V2 only** and requires two additional microservices:
+
+| Service                              | Responsibility                                                                                                    |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `ui-editor-widgets-registry-service` | Stores widget definitions (markup, icons, translations, AI prompts) and syncs the shared widget catalog from Stripo. |
+| `convo-core-chat-server`             | Runs the AI conversation that generates and edits the widget content.                                             |
+
+Neither service is public. The editor reaches both through `stripo-plugin-api-gateway`, which also checks that the feature is enabled for your plugin and injects the OpenAI key and the chat authentication token.
+
+Both services are already listed in `./resources/helm/manage_charts.sh` and are installed together with the rest of the stack in [Step 8](#step-8-deploy-microservices).
+
+#### Create the Databases
+
+Each service needs its own PostgreSQL database. Both are already included in `./resources/postgres/01_create_databases.sh` (see [Step 1](#step-1-create-postgresql-databases)):
+
+| Service                              | Database                                   | User                       |
+| ------------------------------------ | ------------------------------------------ | -------------------------- |
+| `ui-editor-widgets-registry-service` | `stripo_plugin_local_widgets_registry`     | `user_widgets_registry`    |
+| `convo-core-chat-server`             | `stripo_plugin_local_widgets_chat_history` | `user_widgets_chat_history` |
+
+Both services create and upgrade their own schema on startup — Flyway for the registry service, Alembic for the chat server — so the database user needs `CREATE` on the `public` schema. The script from Step 1 already grants it. PostgreSQL 13 or higher is required: the registry service uses `gen_random_uuid()`.
+
+#### Configure the Widgets Registry Service
+
+Set the database connection and the shared catalog sync in `charts/ui-editor-widgets-registry-service.yaml`:
+
+```yaml
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_widgets_registry
+      spring.datasource.username=user_widgets_registry
+      spring.datasource.password=password_widgets_registry
+      shared.modules.auth.client.api-key=my-api-key
+```
+
+| Property                             | Description                                                                                                                                                     |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shared.modules.auth.client.api-key` | The key issued by the Stripo team (see [Enable the Shared Widget Catalog](#enable-the-shared-widget-catalog)).                                                    |
+| `shared.modules.sync.interval`       | Optional. How often to poll the owner, default `60m`. Either leave it out or give a valid duration — an empty value breaks the sync scheduler.                    |
+
+The service listens on port `8080` and exposes health probes on `8081`, like the other Java microservices.
+
+#### Configure the Chat Server
+
+`convo-core-chat-server` is a Python service and is configured **through environment variables only** — it does not read the properties file that the chart mounts. Set them in the `env` section of `charts/convo-core-chat-server.yaml`:
+
+```yaml
+env:
+  - name: AUTH_PROVIDER_HOST
+    value: http://stripo-plugin-api-gateway:8080/api/v1/convo/inner/
+  - name: DATABASE_URL
+    value: postgresql://user_widgets_chat_history:password_widgets_chat_history@postgres:5432/stripo_plugin_local_widgets_chat_history
+  - name: STRIPO_WIDGET_PROMPT_ENDPOINT
+    value: http://ui-editor-widgets-registry-service:8080/api/v1/widgets/{widgetId}/prompt
+```
+
+| Variable                        | Description                                                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AUTH_PROVIDER_HOST`            | Where the chat server validates the token issued by the api-gateway. It appends `v1/auth/{token}/user-info` to this value, so keep the `/api/v1/convo/inner/` path and the trailing slash. |
+| `DATABASE_URL`                  | Chat history database. **Verify this one carefully:** if it is missing the service still starts and reports healthy, but keeps conversations in memory and loses them on every restart.  |
+| `STRIPO_WIDGET_PROMPT_ENDPOINT` | Where the chat server loads the AI prompt of a widget. Keep the literal `{widgetId}` placeholder — the service substitutes it per request.                                                |
+
+The remaining settings (`CONSOLE_LOG_AS_JSON`, `CONFIG_SERVICE_REQUIRED`, `AUTH_PROVIDER_USE_MOCK`, `USE_PERSISTED_STORE`, `AUTO_MIGRATE`, `LANGFUSE_ENABLED`) come from the chart defaults and are already correct for a self-hosted installation. Override them through `settings.*` only if you have a reason to:
+
+```yaml
+settings:
+  profile: PLUGINS
+  autoMigrate: true          # run Alembic migrations on startup
+```
+
+> **Do not set `OPENAI_API_KEY` on this service.** The key is taken from the plugin configuration and forwarded per request by the api-gateway, which keeps every plugin on its own key. A key left in the environment is used as a fallback and, if you also enable Langfuse tracing, can send conversation content to the wrong OpenAI account.
+
+The service listens on port `8000` and answers health probes at `/api/v1/health`.
+
+#### Route the API Gateway to Both Services
+
+The gateway does not discover the new services on its own. Add both URLs to the `configmap` section of `charts/stripo-plugin-api-gateway.yaml` — without them every widget request fails, even though both pods are running:
+
+```yaml
+      service.widgetsregistry.url=http://ui-editor-widgets-registry-service:8080
+      service.convo.url=http://convo-core-chat-server:8000
+```
+
+Note the different ports: `8080` for the registry service, `8000` for the chat server.
+
+The gateway signs the chat authentication token with `jwt.secret.apiKeyV3`, which is already part of your gateway configuration. No additional secret is needed.
+
+#### Enable the Shared Widget Catalog
+
+The widgets themselves are built and published by Stripo, then pulled into your installation by a background sync: your registry service runs in **follower** mode and polls the Stripo-hosted registry (the **owner**) for the published catalog. Without this sync the widgets panel opens with an empty list.
+
+1. **Request an API key from the Stripo team**, giving them a name for your installation. Stripo registers your installation as a follower on their side and sends you the key.
+2. Put the key into `shared.modules.auth.client.api-key` as shown in [Configure the Widgets Registry Service](#configure-the-widgets-registry-service) and upgrade the service.
+3. The first sync runs as soon as the service is ready, and then repeats every `shared.modules.sync.interval` (default 60 minutes). A successful run logs `Synchronizing shared widgets` followed by `Shared widgets synchronized`. When nothing has changed on the owner side, the request returns `204 No Content` and the log stays quiet.
+
+Synced widgets are managed entirely by the sync — a widget removed from the Stripo catalog is removed from your installation on the next run.
+
+#### Enable Widgets for Your Plugin
+
+Widgets are disabled by default. Enable them in the `config` JSON of the `plugins` table in the `stripo-plugin-details-service` database (see [Step 2](#step-2-insert-required-data-into-the-postgresql-database)):
+
+```json
+{
+  ...,
+  "firstPartyExtensions": {
+    "widgetsEnabled": true,
+    "openaiApiKey": "YOUR_OPEN_AI_API_KEY",
+    "chatkitDomainPublicKey": "YOUR_DOMAIN_PUBLIC_KEY"
+  }
+}
+```
+
+- `widgetsEnabled` — the main switch. While it is `false`, the api-gateway answers `403` to every widget and chat request and the panel never appears in the editor.
+- `openaiApiKey` — your OpenAI API key. The gateway reads it per request and passes it to the chat server as a header; it is never exposed to the browser. Without it the conversation fails with `400 OpenAI Api Key is missing`.
+- `chatkitDomainPublicKey` — the OpenAI **domain public key** that lets the AI Assistant open on your domains (how to get it — below). Unlike `openaiApiKey` it is not a secret: it is used in the browser only to verify the domain and gives no access to your OpenAI account.
+
+**How to get the domain public key.** The AI Assistant in the widgets panel is powered by OpenAI ChatKit. For security reasons, ChatKit runs only on domains verified by OpenAI, so every domain where you embed the editor with the plugin must be added to the domain allowlist of your OpenAI organization:
+
+1. Open the [Domain allowlist](https://platform.openai.com/settings/organization/security/domain-allowlist) page in your OpenAI organization settings (Settings → Security → Domain allowlist).
+2. Add every domain where the editor with the plugin is embedded, including test and staging domains.
+3. Copy the generated public key — it starts with `domain_pk_` — and set it as `chatkitDomainPublicKey`.
+
+> **Warning:** without a valid key, the AI Assistant won't open in the widgets panel on your domain. Widgets already added to sent emails keep working.
+
+You can apply all three values to an already registered plugin with the following SQL (the `config` column stores JSON as text, so it is cast to `jsonb` and back; existing `firstPartyExtensions` keys are preserved):
+
+```sql
+UPDATE plugins
+SET config = (
+    config::jsonb || jsonb_build_object(
+        'firstPartyExtensions',
+        COALESCE(config::jsonb -> 'firstPartyExtensions', '{}'::jsonb) || jsonb_build_object(
+            'widgetsEnabled', true,
+            'openaiApiKey', 'YOUR_OPEN_AI_API_KEY',
+            'chatkitDomainPublicKey', 'YOUR_DOMAIN_PUBLIC_KEY'
+        )
+    )
+)::text
+WHERE plugin_id = 'YOUR_PLUGIN_ID';
+```
+
+The change takes effect immediately: the gateway reads the plugin configuration on every request, so no restart is needed.
+
+#### Allow Long-Lived Streaming Responses
+
+The AI answer is streamed to the browser as Server-Sent Events through the api-gateway. A single answer can take several minutes, and the gateway keeps the stream open for up to 300 seconds. Default NGINX Ingress settings break this in two ways: the response is buffered, so nothing appears until the answer is complete, and the connection is closed after 60 seconds.
+
+Add these annotations to the `stripo-plugin-api-gateway` ingress in `charts/stripo-plugin-api-gateway.yaml`:
+
+```yaml
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "310"
+```
+
+If you terminate traffic on another proxy, load balancer or CDN in front of the cluster, apply the equivalent settings there as well.
+
+#### Host the Widgets Panel Bundle
+
+If you host the editor static files on your own CDN ([Step 10](#step-10-configure-cdn-for-static-resources)), the widgets panel bundle must be copied together with the rest of the release and keep its relative path:
+
+```
+{YOUR_CDN_ADDRESS}/UIEditor.js
+{YOUR_CDN_ADDRESS}/fpe/widgets/loader.js   <-- must be present
+```
+
+The editor derives the loader address from the location of `UIEditor.js`, so `fpe/widgets/` has to sit next to it. If the file is missing, the panel silently fails to load.
+
+The chat interface is loaded at runtime from the OpenAI CDN (`https://cdn.platform.openai.com`). If the page that embeds the editor enforces a Content Security Policy, allow that host in `script-src` and `connect-src`. ChatKit also runs only on domains verified by OpenAI — every domain where the editor is embedded must be in your OpenAI domain allowlist and the generated key must be set as `chatkitDomainPublicKey` (see [Enable Widgets for Your Plugin](#enable-widgets-for-your-plugin)), otherwise the chat area stays blank while the rest of the panel works.
+
+#### Verify the Setup
+
+Open an email in the editor and check that the widgets panel lists widgets and that a message in the chat produces a streamed answer. If something is wrong:
+
+| Symptom                                                                | Cause                                                                                         | Fix                                                                                       |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| The widgets panel does not appear in the editor at all                 | `firstPartyExtensions.widgetsEnabled` is not set in the plugin configuration                | Update the plugin `config` JSON                                                           |
+| Widget requests return `403`                                         | Same as above — the gateway rejects the request before it reaches the registry service        | Update the plugin `config` JSON                                                           |
+| Widget requests return `503` or time out                             | `service.widgetsregistry.url` / `service.convo.url` are empty in the gateway configuration    | Add both URLs and upgrade the gateway                                                     |
+| The panel loads but the widget list is empty                           | The shared catalog has not been synced                                                        | Check `shared.modules.*`, look for `Shared widgets synchronized` in the registry service logs |
+| Registry logs `Owner shared widgets request failed with status 401`  | The API key does not match the one registered on the Stripo side                              | Re-check `shared.modules.auth.client.api-key` with the Stripo team                         |
+| The chat replies `400 OpenAI Api Key is missing`                     | `firstPartyExtensions.openaiApiKey` is empty in the plugin config                            | Add the key to the plugin `config` JSON                                                   |
+| The panel and the widget list work, but the AI Assistant does not open | The embedding domain is not verified by OpenAI: `chatkitDomainPublicKey` is missing, or the domain is not in the allowlist | Add the domain to your OpenAI domain allowlist and set the generated key in the plugin `config` JSON |
+| Every chat request fails with `503`, although the pod is healthy     | `AUTH_PROVIDER_HOST` is not set or unreachable — the chat server cannot validate the token     | Check the variable and that the gateway is reachable from the chat server pod              |
+| The answer arrives all at once at the end, or the stream breaks off    | The ingress buffers the response or closes the connection too early                           | Apply the annotations from [Allow Long-Lived Streaming Responses](#allow-long-lived-streaming-responses) |
+| Chat history disappears after a restart                                | `DATABASE_URL` is not set — the chat server fell back to in-memory storage                    | Set `DATABASE_URL` and restart the service                                                |
 
 <div style="border: 1px solid red; padding: 10px; border-left-width: 10px; background-color: #fff2f2;">
 <strong>Warning:</strong>

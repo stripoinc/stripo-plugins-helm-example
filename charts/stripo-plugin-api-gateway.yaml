@@ -50,6 +50,8 @@ configmap:
       service.statistics.url=http://stripo-plugin-statistics-service:8080
       service.timer.url=http://stripo-timer-api:8080
       service.ai.url=http://ai-service:8080
+      service.widgetsregistry.url=http://ui-editor-widgets-registry-service:8080
+      service.convo.url=http://convo-core-chat-server:8000
       rate.limit.enabled=false
       redisson.url=redis://redis:6379
       redisson.password=test

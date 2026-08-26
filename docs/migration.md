@@ -2,6 +2,93 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of August 26, 2026
+
+### Key Changes
+
+- Added **AI Widgets** for Stripo Editor V2 — an assistant panel where the user configures an interactive block (scratcher, poll and similar) in a chat conversation instead of a form. The feature introduces **two new microservices**:
+  - `ui-editor-widgets-registry-service` — stores widget definitions and syncs the shared widget catalog published by Stripo;
+  - `convo-core-chat-server` — runs the AI conversation that generates and edits the widget content.
+- Both services are internal: the editor reaches them through `stripo-plugin-api-gateway`, which checks the feature entitlement, injects the OpenAI key from the plugin configuration and issues the chat authentication token.
+- The AI Assistant in the widgets panel is powered by OpenAI ChatKit, which for security reasons runs only on domains verified by OpenAI. The `firstPartyExtensions.chatkitDomainPublicKey` plugin configuration parameter carries the **domain public key** of your own OpenAI organization, so the assistant can open on the domains where you embed the editor. Unlike `openaiApiKey`, this key is **not a secret**: it is used in the browser only to verify the domain and gives no access to your OpenAI account.
+- The feature is **off by default**. Existing installations are not affected until you enable it.
+
+### Action Required
+
+**Nothing to do if you do not need AI Widgets, or if you run Stripo Editor V1 only.** The feature is disabled by default; existing services and configurations keep working unchanged.
+
+To enable AI Widgets, follow [Step 11: Configure AI Widgets](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-11-configure-ai-widgets-for-v2-only) in the deployment manual. In short:
+
+1. **Update the Helm repository** — both charts are new:
+
+   ```shell
+   helm repo update stripo
+   ```
+2. **Create two databases** using the updated `resources/postgres/01_create_databases.sh` (or `01_create_databases_iam.sh` for Aurora PostgreSQL with IAM authentication):
+
+   | Service                              | Database                                   | User                       |
+   | ------------------------------------ | ------------------------------------------ | -------------------------- |
+   | `ui-editor-widgets-registry-service` | `stripo_plugin_local_widgets_registry`     | `user_widgets_registry`    |
+   | `convo-core-chat-server`             | `stripo_plugin_local_widgets_chat_history` | `user_widgets_chat_history` |
+
+   Both services migrate their own schema on startup (Flyway and Alembic respectively), so the database user needs `CREATE` on the `public` schema. If you use Aurora with IAM authentication, add `user_widgets_registry` and `user_widgets_chat_history` to the `rds-db:connect` policy from the [March 06, 2026 update](#update-as-of-march-06-2026).
+3. **Deploy both services.** They are already part of the updated `resources/helm/manage_charts.sh`; `charts/ui-editor-widgets-registry-service.yaml` and `charts/convo-core-chat-server.yaml` are provided as examples.
+4. **Point the api-gateway at them.** Add two properties to the `configmap` section of `charts/stripo-plugin-api-gateway.yaml` and upgrade the gateway:
+
+   ```properties
+   service.widgetsregistry.url=http://ui-editor-widgets-registry-service:8080
+   service.convo.url=http://convo-core-chat-server:8000
+   ```
+
+   > This step is easy to miss: both properties default to an empty value, so the pods run and look healthy while every widget request fails.
+5. **Request a shared widgets API key from the Stripo team** and set it as `shared.modules.auth.client.api-key` in `charts/ui-editor-widgets-registry-service.yaml`. The widget catalog is maintained by Stripo and pulled into your installation by a background sync; without the key the panel opens with an empty list. Stripo registers your installation on their side — you do not insert anything into your own database.
+6. **Generate the OpenAI domain public key** in your OpenAI organization:
+
+   1. Open the [Domain allowlist](https://platform.openai.com/settings/organization/security/domain-allowlist) page (Settings → Security → Domain allowlist).
+   2. Add every domain where the editor with the plugin is embedded, including test and staging domains.
+   3. Copy the generated public key — it starts with `domain_pk_`.
+
+   > **Warning:** without a valid key, the AI Assistant won't open in the widgets panel on your domain. Widgets already added to sent emails keep working.
+7. **Enable the feature for your plugin** in the `config` JSON of the `plugins` table (`stripo-plugin-details-service` database, `stripo_plugin_local_plugin_details`):
+
+   ```json
+   {
+     ...,
+     "firstPartyExtensions": {
+       "widgetsEnabled": true,
+       "openaiApiKey": "YOUR_OPEN_AI_API_KEY",
+       "chatkitDomainPublicKey": "YOUR_DOMAIN_PUBLIC_KEY"
+     }
+   }
+   ```
+
+   You can apply all three values with the following SQL (the `config` column stores JSON as text, so it is cast to `jsonb` and back; existing `firstPartyExtensions` keys are preserved):
+
+   ```sql
+   UPDATE plugins
+   SET config = (
+       config::jsonb || jsonb_build_object(
+           'firstPartyExtensions',
+           COALESCE(config::jsonb -> 'firstPartyExtensions', '{}'::jsonb) || jsonb_build_object(
+               'widgetsEnabled', true,
+               'openaiApiKey', 'YOUR_OPEN_AI_API_KEY',
+               'chatkitDomainPublicKey', 'YOUR_DOMAIN_PUBLIC_KEY'
+           )
+       )
+   )::text
+   WHERE plugin_id = 'YOUR_PLUGIN_ID';
+   ```
+
+   The gateway reads the plugin configuration on every request, so the change applies without a restart.
+8. **Allow long-lived streaming responses on the ingress.** The AI answer is streamed as Server-Sent Events and can take several minutes, while NGINX Ingress buffers responses and closes idle connections after 60 seconds by default. Add to the `stripo-plugin-api-gateway` ingress annotations:
+
+   ```yaml
+   nginx.ingress.kubernetes.io/proxy-buffering: "off"
+   nginx.ingress.kubernetes.io/proxy-read-timeout: "310"
+   ```
+9. **If you host the editor static files on your own CDN**, copy the new `fpe/widgets/loader.js` bundle next to `UIEditor.js` — the editor resolves it relative to the editor script. Additionally, the chat interface loads from `https://cdn.platform.openai.com` and runs only on domains from your OpenAI domain allowlist (step 6): allow that host in your Content Security Policy and make sure every domain where the editor is embedded is in the allowlist.
+
+
 ## Update as of August 03, 2026
 
 ### Key Changes
