@@ -1,0 +1,45 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+resources:
+  limits:
+    memory: 1300Mi
+    cpu: 1000m
+  requests:
+    memory: 750Mi
+    cpu: 150m
+
+# In case of autoscaling is disabled
+#replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+#  logstash:
+#    host: logstash
+#    port: "5008"
+
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms400m -Xmx900m -XX:ReservedCodeCacheSize=128M
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_calendar_link
+      spring.datasource.username=user_calendar_link
+      spring.datasource.password=password_calendar_link
+      # Access token to the Stripo-hosted Calendar Link Generator, issued per
+      # customer by the Stripo team - request it from Stripo support before
+      # enabling this service. The service refuses to start without a token.
+      calendar-link.token=

@@ -27,6 +27,7 @@ databases_users=(
   "ai_service user_ai_service password_ai_service"
   "stripo_plugin_local_widgets_registry user_widgets_registry password_widgets_registry"
   "stripo_plugin_local_widgets_chat_history user_widgets_chat_history password_widgets_chat_history"
+  "stripo_plugin_local_calendar_link user_calendar_link password_calendar_link"
 )
 
 # Step 1: Create databases, users, and assign privileges

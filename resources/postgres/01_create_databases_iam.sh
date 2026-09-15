@@ -35,6 +35,7 @@ databases_users=(
   "stripo_plugin_local_timers user_timers"
   "stripo_plugin_local_widgets_registry user_widgets_registry"
   "stripo_plugin_local_widgets_chat_history user_widgets_chat_history"
+  "stripo_plugin_local_calendar_link user_calendar_link"
 )
 
 # Step 1: Create databases, users, grant rds_iam role, and assign privileges
