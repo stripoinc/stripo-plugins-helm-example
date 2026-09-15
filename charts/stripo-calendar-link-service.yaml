@@ -36,13 +36,10 @@ configmap:
   extraScrapeConfigs:
     application.properties: |
       logging.level.root=INFO
-      service.mode=plugin
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_calendar_link
       spring.datasource.username=user_calendar_link
       spring.datasource.password=password_calendar_link
-      # Credentials to the Stripo-hosted Calendar Link Generator upstream. This is a
-      # per-customer credential issued by the Stripo team - request it from Stripo
-      # support before enabling this service. The service refuses to start without a
-      # token.
-      calendar-link.base-url=
+      # Access token to the Stripo-hosted Calendar Link Generator, issued per
+      # customer by the Stripo team - request it from Stripo support before
+      # enabling this service. The service refuses to start without a token.
       calendar-link.token=

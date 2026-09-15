@@ -1154,7 +1154,7 @@ Stripo is not responsible for the system's functionality if this instruction is 
 
 `stripo-calendar-link-service` generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks in the email template. The feature is available in **Stripo Editor V2 only**.
 
-The service itself does not generate the calendar files — it is a thin proxy in front of a Stripo-hosted Calendar Link Generator. Because of that, **it requires a base URL and an access token issued by the Stripo team**; contact Stripo support to request them before enabling this service. The service will not start without a valid token.
+The service itself does not generate the calendar files — it is a thin proxy in front of a Stripo-hosted Calendar Link Generator. Because of that, **it requires an access token issued by the Stripo team**; contact Stripo support to request one before enabling this service. The service will not start without a valid token.
 
 The service is listed in `./resources/helm/manage_charts.sh` but **commented out by default**: it does not start without `calendar-link.token`, so enable it only after completing this step. Once the credentials are in place, uncomment `"stripo-calendar-link-service"` in the `services` array and run the script as in [Step 8](#step-8-deploy-microservices).
 
@@ -1170,7 +1170,7 @@ The service migrates its own schema on startup (Flyway), so the database user ne
 
 #### Configure the Service
 
-Set the database connection and the upstream credentials in `charts/stripo-calendar-link-service.yaml`:
+Set the database connection and the access token in `charts/stripo-calendar-link-service.yaml`:
 
 ```yaml
 configmap:
@@ -1178,18 +1178,15 @@ configmap:
   extraScrapeConfigs:
     application.properties: |
       logging.level.root=INFO
-      service.mode=plugin
       spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_calendar_link
       spring.datasource.username=user_calendar_link
       spring.datasource.password=password_calendar_link
-      calendar-link.base-url=<value provided by Stripo>
       calendar-link.token=<value provided by Stripo>
 ```
 
-| Property                  | Description                                                                                                       |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `calendar-link.base-url`  | Endpoint of the Stripo-hosted Calendar Link Generator. Request it from the Stripo team.                            |
-| `calendar-link.token`     | Access token for that endpoint, issued per customer by the Stripo team. The service refuses to start without one.  |
+| Property               | Description                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `calendar-link.token`  | Access token to the Stripo-hosted Calendar Link Generator, issued per customer by the Stripo team. The service refuses to start without one. |
 
 The service listens on port `8080` and exposes health probes on `8081`, like the other Java microservices.
 

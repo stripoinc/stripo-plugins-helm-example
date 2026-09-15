@@ -7,7 +7,7 @@ This document is designed to assist you in migrating your Stripo environment to 
 ### Key Changes
 
 - Added **stripo-calendar-link-service** — generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks in the email template. Available in **Stripo Editor V2 only**.
-- The service is a thin proxy in front of a Stripo-hosted Calendar Link Generator and therefore requires a base URL and an access token issued by the Stripo team, per customer.
+- The service is a thin proxy in front of a Stripo-hosted Calendar Link Generator and therefore requires an access token issued by the Stripo team, per customer.
 - The feature has **no effect** until the service is deployed and configured. Existing installations are not affected until you add it.
 
 ### Action Required
@@ -34,7 +34,7 @@ To enable it, follow [Step 12: Configure Calendar Link Generator](https://github
    ```
 
    > This step is easy to miss: the property defaults to an empty value, so both pods run and look healthy while every "Add to calendar" request fails.
-5. **Request the upstream base URL and access token from the Stripo team** and set them as `calendar-link.base-url` / `calendar-link.token` in `charts/stripo-calendar-link-service.yaml`. The service will not start without them.
+5. **Request the access token from the Stripo team** and set it as `calendar-link.token` in `charts/stripo-calendar-link-service.yaml`. The service will not start without it.
 
 ## Update as of August 26, 2026
 
