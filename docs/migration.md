@@ -2,6 +2,40 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of September 15, 2026
+
+### Key Changes
+
+- Added **stripo-calendar-link-service** — generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks in the email template. Available in **Stripo Editor V2 only**.
+- The service is a thin proxy in front of a Stripo-hosted Calendar Link Generator and therefore requires a base URL and an access token issued by the Stripo team, per customer.
+- The feature has **no effect** until the service is deployed and configured. Existing installations are not affected until you add it.
+
+### Action Required
+
+**Nothing to do if you do not need "Add to calendar" links, or if you run Stripo Editor V1 only.**
+
+To enable it, follow [Step 12: Configure Calendar Link Generator](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-12-configure-calendar-link-generator-for-v2-only) in the deployment manual. In short:
+
+1. **Update the Helm repository** — the chart is new:
+
+   ```shell
+   helm repo update stripo
+   ```
+2. **Create the database** using the updated `resources/postgres/01_create_databases.sh` (or `01_create_databases_iam.sh` for Aurora PostgreSQL with IAM authentication):
+
+   | Service                        | Database                            | User                  |
+   | -------------------------------- | ------------------------------------ | --------------------- |
+   | `stripo-calendar-link-service` | `stripo_plugin_local_calendar_link` | `user_calendar_link`  |
+3. **Deploy the service.** It is listed in the updated `resources/helm/manage_charts.sh` but commented out by default — uncomment it only after setting the credentials from item 5, because the service does not start without `calendar-link.token`; `charts/stripo-calendar-link-service.yaml` is provided as an example.
+4. **Point the api-gateway at it.** Add one property to the `configmap` section of `charts/stripo-plugin-api-gateway.yaml` and upgrade the gateway:
+
+   ```properties
+   service.calendarlink.url=http://stripo-calendar-link-service:8080
+   ```
+
+   > This step is easy to miss: the property defaults to an empty value, so both pods run and look healthy while every "Add to calendar" request fails.
+5. **Request the upstream base URL and access token from the Stripo team** and set them as `calendar-link.base-url` / `calendar-link.token` in `charts/stripo-calendar-link-service.yaml`. The service will not start without them.
+
 ## Update as of August 26, 2026
 
 ### Key Changes

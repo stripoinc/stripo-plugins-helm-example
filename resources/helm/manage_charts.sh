@@ -78,6 +78,14 @@ services=(
   "convo-core-chat-server"
 
   #---------------------------------------------------
+  # Uncomment after configuring the Calendar Link Generator credentials
+  # (README Step 12) - the service does not start without calendar-link.token.
+  # Request calendar-link.base-url and calendar-link.token from the Stripo team
+  # and set them in charts/stripo-calendar-link-service.yaml
+  #"stripo-calendar-link-service"
+  #---------------------------------------------------
+
+  #---------------------------------------------------
   # Comment to run ONLY Stripo editor V2 microservices
   "stripo-plugin-drafts-service"
   "patches-service"

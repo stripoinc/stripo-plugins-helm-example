@@ -45,6 +45,10 @@
      - [Allow Long-Lived Streaming Responses](#allow-long-lived-streaming-responses)
      - [Host the Widgets Panel Bundle](#host-the-widgets-panel-bundle)
      - [Verify the Setup](#verify-the-setup)
+   - [Step 12: Configure Calendar Link Generator (for V2 only)](#step-12-configure-calendar-link-generator-for-v2-only)
+     - [Create the Database](#create-the-database)
+     - [Configure the Service](#configure-the-service)
+     - [Route the API Gateway](#route-the-api-gateway)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -115,6 +119,7 @@ The table below outlines the current microservices, their roles, and their requi
 | **merge-service**                       | Applies autosave patches to email templates.                                                           | false        | false           | true            |
 | **ui-editor-widgets-registry-service**  | Stores AI widget definitions and syncs the shared widget catalog from Stripo.                          | false        | false           | true            |
 | **convo-core-chat-server**              | Runs the AI conversation that generates and edits widget content.                                      | false        | false           | true            |
+| **stripo-calendar-link-service**        | Generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks. | false        | false           | true            |
 
 ### Notes:
 
@@ -227,6 +232,7 @@ Below is a list of microservices that require individual PostgreSQL databases:
 - `stripo-plugin-image-bank-service`
 - `stripe-html-gen-service`
 - `stripo-security-service`
+- `stripo-calendar-link-service` (V2 only — see [Step 12](#step-12-configure-calendar-link-generator-for-v2-only))
 - `ui-editor-widgets-registry-service` (AI Widgets, V2 only — see [Step 11](#step-11-configure-ai-widgets-for-v2-only))
 - `convo-core-chat-server` (AI Widgets, V2 only — see [Step 11](#step-11-configure-ai-widgets-for-v2-only))
 
@@ -1143,6 +1149,59 @@ Open an email in the editor and check that the widgets panel lists widgets and t
 <strong>Warning:</strong>
 Stripo is not responsible for the system's functionality if this instruction is not followed and the system is deployed in a manner different from the suggested method. However, our specialists are available to assist you on an individual basis according to specific agreements.
 </div>
+
+### Step 12: Configure Calendar Link Generator (for V2 only)
+
+`stripo-calendar-link-service` generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks in the email template. The feature is available in **Stripo Editor V2 only**.
+
+The service itself does not generate the calendar files — it is a thin proxy in front of a Stripo-hosted Calendar Link Generator. Because of that, **it requires a base URL and an access token issued by the Stripo team**; contact Stripo support to request them before enabling this service. The service will not start without a valid token.
+
+The service is listed in `./resources/helm/manage_charts.sh` but **commented out by default**: it does not start without `calendar-link.token`, so enable it only after completing this step. Once the credentials are in place, uncomment `"stripo-calendar-link-service"` in the `services` array and run the script as in [Step 8](#step-8-deploy-microservices).
+
+#### Create the Database
+
+Add to `./resources/postgres/01_create_databases.sh` (or `01_create_databases_iam.sh` for Aurora PostgreSQL with IAM authentication; see [Step 1](#step-1-create-postgresql-databases)):
+
+| Service                         | Database                            | User                  |
+| -------------------------------- | ------------------------------------ | --------------------- |
+| `stripo-calendar-link-service`  | `stripo_plugin_local_calendar_link` | `user_calendar_link`  |
+
+The service migrates its own schema on startup (Flyway), so the database user needs `CREATE` on the `public` schema. The script from Step 1 already grants it.
+
+#### Configure the Service
+
+Set the database connection and the upstream credentials in `charts/stripo-calendar-link-service.yaml`:
+
+```yaml
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      service.mode=plugin
+      spring.datasource.url=jdbc:postgresql://postgres:5432/stripo_plugin_local_calendar_link
+      spring.datasource.username=user_calendar_link
+      spring.datasource.password=password_calendar_link
+      calendar-link.base-url=<value provided by Stripo>
+      calendar-link.token=<value provided by Stripo>
+```
+
+| Property                  | Description                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `calendar-link.base-url`  | Endpoint of the Stripo-hosted Calendar Link Generator. Request it from the Stripo team.                            |
+| `calendar-link.token`     | Access token for that endpoint, issued per customer by the Stripo team. The service refuses to start without one.  |
+
+The service listens on port `8080` and exposes health probes on `8081`, like the other Java microservices.
+
+#### Route the API Gateway
+
+Add one property to the `configmap` section of `charts/stripo-plugin-api-gateway.yaml` and upgrade the gateway:
+
+```properties
+service.calendarlink.url=http://stripo-calendar-link-service:8080
+```
+
+> This step is easy to miss: the property defaults to an empty value, so both pods run and look healthy while every "Add to calendar" request fails.
 
 ## Testing
 
