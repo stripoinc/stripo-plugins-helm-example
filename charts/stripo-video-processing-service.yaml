@@ -1,0 +1,67 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+# Chart 1.0.1 minimum defaults (poolSize=2). ephemeral-storage holds the
+# source MP4 (up to 200 MB) plus poster/GIF per job.
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+    ephemeral-storage: 2Gi
+  requests:
+    cpu: 100m
+    memory: 750Mi
+    ephemeral-storage: 1Gi
+
+# In case of autoscaling is disabled
+#replicaCount: 1
+
+# Must stay above terminationGracePeriodSeconds (360) or helm/kubectl
+# rollout status fails while the old pod still drains an ffmpeg job.
+DeadlineSeconds: 600
+terminationGracePeriodSeconds: 360
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+#  logstash:
+#    host: logstash
+#    port: "5008"
+
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
+
+# Do not expose this service via Ingress or HTTPRoute. In plugin mode it
+# permits all requests and trusts ES-PLUGIN-* headers from the api-gateway,
+# so it must be reachable only from inside the cluster.
+ingress:
+  enabled: false
+
+httproute:
+  enabled: false
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    # service.mode=plugin is already the chart 1.0.1 default (base.properties).
+    application.properties: |
+      logging.level.root=INFO
+      plugin.documents.url=http://stripo-plugin-documents-service:8080
+      # Standalone Redis (not Cluster). Same instance as the other charts.
+      redisson.url=redis://redis:6379
+      redisson.password=test
+      redisson.authorized=true
+      # Uncomment only if source MP4s are on a host that resolves to a private
+      # IP (internal S3/MinIO). Use the URL hostname, not an IP address.
+      # stripo.ssrf.allowed-hosts=storage.internal.example.com
+      # To run one ffmpeg job at a time (~1 CPU / ~1.3Gi):
+      # video.processing.poolSize=1

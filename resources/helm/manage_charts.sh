@@ -86,6 +86,14 @@ services=(
   #---------------------------------------------------
 
   #---------------------------------------------------
+  # Uncomment after following README Step 13 (Play-in-email / V2 only).
+  # Optional: the editor works without it. Default 2 CPU / 2Gi and
+  # service.video.url on the api-gateway. No extra token or database.
+  # charts/stripo-video-processing-service.yaml
+  #"stripo-video-processing-service"
+  #---------------------------------------------------
+
+  #---------------------------------------------------
   # Comment to run ONLY Stripo editor V2 microservices
   "stripo-plugin-drafts-service"
   "patches-service"
