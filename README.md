@@ -49,6 +49,10 @@
      - [Create the Database](#create-the-database)
      - [Configure the Service](#configure-the-service)
      - [Route the API Gateway](#route-the-api-gateway)
+   - [Step 13: Configure Play-in-email Video Processing (for V2 only)](#step-13-configure-play-in-email-video-processing-for-v2-only)
+     - [Configure the Video Processing Service](#configure-the-video-processing-service)
+     - [Route the API Gateway for Video Processing](#route-the-api-gateway-for-video-processing)
+     - [Enable Play-in-email in the Editor](#enable-play-in-email-in-the-editor)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -120,6 +124,7 @@ The table below outlines the current microservices, their roles, and their requi
 | **ui-editor-widgets-registry-service**  | Stores AI widget definitions and syncs the shared widget catalog from Stripo.                          | false        | false           | true            |
 | **convo-core-chat-server**              | Runs the AI conversation that generates and edits widget content.                                      | false        | false           | true            |
 | **stripo-calendar-link-service**        | Generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks. | false        | false           | true            |
+| **stripo-video-processing-service**     | Optional. Play-in-email for the Video block: upload an MP4; the editor generates a poster and an animated GIF (play-button overlay) as fallback. | false        | false           | true            |
 
 ### Notes:
 
@@ -1199,6 +1204,74 @@ service.calendarlink.url=http://stripo-calendar-link-service:8080
 ```
 
 > This step is easy to miss: the property defaults to an empty value, so both pods run and look healthy while every "Add to calendar" request fails.
+
+### Step 13: Configure Play-in-email Video Processing (for V2 only)
+
+Play-in-email mode for the **Video** block: the user uploads an MP4 and the editor generates a poster frame and an animated GIF fallback (with a play-button overlay) automatically, so the video plays natively in the email where that is supported and falls back to the GIF everywhere else. **Stripo Editor V2 only.** Optional — enable it only if you turn the feature on with `playInEmailEnabled` (see below).
+
+`stripo-video-processing-service` is the backend for that. It needs **no PostgreSQL database** and **no extra token**. It uses the same Redis instance as the rest of the stack (standalone, not Redis Cluster; job keys use the prefix `video_job_*`) and stores generated assets via `stripo-plugin-documents-service`.
+
+It is listed in `./resources/helm/manage_charts.sh` but **commented out by default**. Uncomment `"stripo-video-processing-service"` in the `services` array after completing this step, then run the script as in [Step 8](#step-8-deploy-microservices).
+
+Do **not** expose this service on Ingress or HTTPRoute. In plugin mode it permits all requests and trusts `ES-PLUGIN-*` headers from the api-gateway, so it must stay reachable only inside the cluster.
+
+Chart **1.0.1** (or newer) is required: it sets `service.mode=plugin`, `terminationGracePeriodSeconds: 360`, and `DeadlineSeconds: 600`. Upgrade the **whole 2.78.0** plugin release together; do not mix versions.
+
+#### Configure the Video Processing Service
+
+Set Redis and the documents-service URL in `charts/stripo-video-processing-service.yaml`. Chart `1.0.1` already sets `service.mode=plugin` in `base.properties` — do not put that key in `application.properties` unless you need to override it.
+
+```yaml
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      plugin.documents.url=http://stripo-plugin-documents-service:8080
+      redisson.url=redis://redis:6379
+      redisson.password=test
+      redisson.authorized=true
+      # Uncomment only if source MP4s are on a host that resolves to a private
+      # IP (internal S3/MinIO). Use the URL hostname, not an IP address.
+      # stripo.ssrf.allowed-hosts=storage.internal.example.com
+      # To run one ffmpeg job at a time (~1 CPU / ~1.3Gi):
+      # video.processing.poolSize=1
+```
+
+| Property | Description |
+| --- | --- |
+| `plugin.documents.url` | In-cluster URL of `stripo-plugin-documents-service` (port `8080`). |
+| `redisson.url` | Standalone Redis (`redis://redis:6379` in this repo). Not Redis Cluster. |
+| `redisson.password` / `redisson.authorized` | Match your Redis. The example values use the same `test` password as the other charts. |
+| `stripo.ssrf.allowed-hosts` | Optional. The service downloads the source MP4 by URL. Hosts that resolve to a private IP, and URLs that use an IP instead of a hostname, are blocked. For internal S3/MinIO, list the storage hostname (not an IP) here. |
+
+Keep `resources` at the chart minimum (CPU limit 2, memory 2Gi, ephemeral-storage request 1Gi / limit 2Gi) and `terminationGracePeriodSeconds: 360` so in-flight ffmpeg jobs can finish on shutdown. `DeadlineSeconds` must stay above that (600), or `manage_charts.sh` / `kubectl rollout status` fails while the old pod drains.
+
+Those CPU/memory numbers match default `video.processing.poolSize=2` (one ffmpeg thread per job). To run one job at a time (~1 CPU / ~1.3Gi), set `video.processing.poolSize=1` in `application.properties`.
+
+Fixed limits (not configured in this guide): source MP4 up to **200 MB**, result cache **24 hours**, job TTL **30 minutes**.
+
+The service listens on port `8080` and exposes health probes on `8081`, like the other Java microservices.
+
+#### Route the API Gateway for Video Processing
+
+Add one property to the `configmap` section of `charts/stripo-plugin-api-gateway.yaml` and raise the ingress body size so a 200 MB MP4 can pass through the gateway, then upgrade the gateway:
+
+```properties
+service.video.url=http://stripo-video-processing-service:8080
+```
+
+```yaml
+nginx.ingress.kubernetes.io/proxy-body-size: 201m
+```
+
+> Easy to miss: `service.video.url` defaults to empty, so both pods look healthy while Play-in-email requests fail. The example gateway annotation is `201m` (was `20m`) because of the 200 MB upload limit.
+
+#### Enable Play-in-email in the Editor
+
+After the service is running and the gateway has `service.video.url`, pass `playInEmailEnabled: true` in the editor initialization settings. Do **not** set this flag before the microservice is deployed — the editor will offer Play-in-email and the requests will fail.
+
+See [Initialization Settings](https://plugin.stripo.email/editor-configuration/initialization-settings) (`playInEmailEnabled`).
 
 ## Testing
 

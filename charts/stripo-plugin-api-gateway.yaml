@@ -53,6 +53,7 @@ configmap:
       service.widgetsregistry.url=http://ui-editor-widgets-registry-service:8080
       service.convo.url=http://convo-core-chat-server:8000
       service.calendarlink.url=http://stripo-calendar-link-service:8080
+      service.video.url=http://stripo-video-processing-service:8080
       rate.limit.enabled=false
       redisson.url=redis://redis:6379
       redisson.password=test
@@ -64,7 +65,7 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: 20m
+    nginx.ingress.kubernetes.io/proxy-body-size: 201m
     nginx.ingress.kubernetes.io/server-snippet: |
       location ~* "^/actuator" {
           deny all;

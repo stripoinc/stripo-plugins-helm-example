@@ -2,6 +2,42 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of September 18, 2026
+
+Applies from **Stripo Plugin V2 release 2.78.0**.
+
+### Key Changes
+
+- Added **stripo-video-processing-service** — Play-in-email for the Video block: upload an MP4; the editor generates a poster frame and an animated GIF fallback (play-button overlay). Available in **Stripo Editor V2 only**. Optional.
+- Helm chart **1.0.1** sets `service.mode=plugin`, `terminationGracePeriodSeconds: 360`, `DeadlineSeconds: 600`, and the ffmpeg resource floor (2 CPU / 2Gi / ephemeral-storage 1Gi–2Gi).
+- The feature has **no effect** until the service is deployed, the api-gateway has `service.video.url`, and the editor is initialized with `playInEmailEnabled: true`. Existing installations are not affected until you add it.
+- **No new PostgreSQL database.** Shared **standalone** Redis (not Cluster; job keys `video_job_*`) and `stripo-plugin-documents-service`.
+- Upgrade the **whole 2.78.0** plugin release together. Do not mix versions or upgrade in parts.
+- Do **not** expose this service via Ingress or HTTPRoute.
+- Fixed limits: source MP4 up to 200 MB, result cache 24 hours, job TTL 30 minutes.
+
+### Action Required
+
+**Nothing to do if you do not need Play-in-email, or if you run Stripo Editor V1 only.**
+
+To enable it, follow [Step 13: Configure Play-in-email Video Processing](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-13-configure-play-in-email-video-processing-for-v2-only) in the deployment manual. In short:
+
+1. **Update the Helm repository** — chart `1.0.1` is required (grace period and plugin-mode default):
+
+   ```shell
+   helm repo update stripo
+   ```
+2. **Configure** `charts/stripo-video-processing-service.yaml` — Redis, `plugin.documents.url`. Do not add a database. Example file is in this repo.
+3. **Deploy the service.** It is listed in the updated `resources/helm/manage_charts.sh` but commented out by default. Uncomment `"stripo-video-processing-service"` after the values from item 2 are set.
+4. **Point the api-gateway at it** and allow 200 MB uploads. Add the property below to `charts/stripo-plugin-api-gateway.yaml` and set `nginx.ingress.kubernetes.io/proxy-body-size: 201m`, then upgrade the gateway:
+
+   ```properties
+   service.video.url=http://stripo-video-processing-service:8080
+   ```
+
+   > This step is easy to miss: the property defaults to an empty value, so both pods run and look healthy while Play-in-email requests fail.
+5. **Enable the feature in the editor** with init parameter `playInEmailEnabled: true` — only after this service is deployed. See [Initialization Settings](https://plugin.stripo.email/editor-configuration/initialization-settings). Do not set the flag first.
+
 ## Update as of September 15, 2026
 
 ### Key Changes
