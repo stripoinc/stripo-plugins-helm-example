@@ -1,0 +1,43 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+settings:
+  profile: PLUGINS
+
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
+  # Required at startup even in plugin mode. Any non-empty value.
+  # Not used for the link check. Do not leave them empty.
+  - name: SWAGGER_PASSWORD
+    value: change-me
+  - name: RATE_LIMIT_INNER_SECRET
+    value: change-me
+
+# Do not expose this service via Ingress or HTTPRoute. In plugin mode it
+# permits all requests and trusts the api-gateway in front of it.
+ingress:
+  enabled: false
+
+httproute:
+  enabled: false
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    # service.mode=plugin is already the chart 1.0.1 default (base.properties).
+    application.properties: |
+      logging.level.root=INFO
+      # Standalone Redis (not Cluster). Same instance as the other charts.
+      # Both clients are probed at startup; set the same URL and password on each.
+      redisson.cache.url=redis://redis:6379
+      redisson.cache.password=test
+      redisson.cache.authorized=true
+      redisson.ratelimits.url=redis://redis:6379
+      redisson.ratelimits.password=test
+      redisson.ratelimits.authorized=true
+      # Dangerous-link lookup stays off until the customer sets their own key.
+      # URLs are not sent to Google while this is empty.
+      # web-risk.api-key=
