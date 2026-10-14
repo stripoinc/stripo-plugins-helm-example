@@ -128,8 +128,8 @@ The table below outlines the current microservices, their roles, and their requi
 | **ui-editor-widgets-registry-service**  | Stores AI widget definitions and syncs the shared widget catalog from Stripo.                          | false        | false           | true            |
 | **convo-core-chat-server**              | Runs the AI conversation that generates and edits widget content.                                      | false        | false           | true            |
 | **stripo-calendar-link-service**        | Generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks. | false        | false           | true            |
-| **stripo-video-processing-service**     | Optional. Play-in-email for the Video block: upload an MP4; the editor generates a poster and an animated GIF (play-button overlay) as fallback. | false        | false           | true            |
-| **stripo-url-validator-service**        | Optional. URL Checker for Editor V2: checks links and image URLs from the email (HTTP status, redirects, shorteners, slow pages, and Google Web Risk when the customer sets a key). | false        | false           | true            |
+| **stripo-video-processing-service**     | Optional. Play-in-email for the Video block: upload an MP4; the editor generates a poster and an animated GIF (play-button overlay) as fallback. | false        | false           | false           |
+| **stripo-url-validator-service**        | Optional. URL Checker for Editor V2: checks links and image URLs from the email (HTTP status, redirects, shorteners, slow pages, and Google Web Risk when the customer sets a key). | false        | false           | false           |
 
 ### Notes:
 
@@ -1286,7 +1286,28 @@ URL Checker lets the host application open a validation mode that collects links
 
 It is listed in `./resources/helm/manage_charts.sh` but **commented out by default**. Uncomment `"stripo-url-validator-service"` in the `services` array after completing this step, then run the script as in [Step 8](#step-8-deploy-microservices).
 
-Do **not** expose this service on Ingress or HTTPRoute. In plugin mode it permits all requests and trusts the api-gateway, so it must stay reachable only inside the cluster.
+Do **not** expose this service on Ingress or HTTPRoute. In plugin mode it permits all requests and trusts the api-gateway, so it must stay reachable only inside the cluster. Any pod in the cluster could otherwise call it and ask it to open arbitrary URLs.
+
+If the cluster enforces NetworkPolicy, allow ingress only from the api-gateway:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: stripo-url-validator-service
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: stripo-url-validator-service
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: stripo-plugin-api-gateway
+      ports:
+        - port: 8080
+```
 
 #### Configure the URL Validator Service
 
@@ -1296,8 +1317,6 @@ Set Redis in `charts/stripo-url-validator-service.yaml`.
 env:
   - name: JAVA_TOOL_OPTIONS
     value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
-  - name: RATE_LIMIT_INNER_SECRET
-    value: change-me
 
 configmap:
   enabled: true
@@ -1315,11 +1334,10 @@ configmap:
 
 | Property | Description |
 | --- | --- |
-| `RATE_LIMIT_INNER_SECRET` | Any non-empty value. The process does not start without it. The account rate-limit filter is not used in plugin mode. |
 | `redisson.cache.url` | Standalone Redis for the check cache (`redis://redis:6379` in this repo). Not Redis Cluster. |
 | `redisson.ratelimits.url` | Same Redis. The plugin install does not apply account rate limits, but the process still connects to this client. Use the same password as `redisson.cache`. |
 | `redisson.*.password` / `redisson.*.authorized` | Match your Redis. The example values use the same `test` password as the other charts. |
-| `web-risk.api-key` | Optional. The customer's own Google Web Risk key. While it is empty, the dangerous-link check stays off and URLs are not sent to Google. The other checks still run. Stripo does not issue this key for a self-hosted install. |
+| `web-risk.api-key` | Optional. The customer's own Google Web Risk key. While it is empty, dangerous links are reported as clean: the result looks the same as a link that passed the check, not as an unchecked one. URLs are not sent to Google. Stripo does not issue this key for a self-hosted install. |
 
 The service listens on port `8080` and exposes health probes on `8081`, like the other Java microservices.
 
