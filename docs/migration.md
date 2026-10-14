@@ -2,6 +2,42 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of October 12, 2026
+
+Applies from **Stripo Plugin V2 release 2.81.0**.
+
+### Key Changes
+
+- Added **stripo-url-validator-service** — URL Checker for Editor V2. The host application opens a mode that sends links and image URLs from the email to this service. Available in **Stripo Editor V2 only**. Optional.
+- The feature has **no effect** until the service is deployed, the api-gateway has `service.urlvalidator.url`, and the host application calls `urlLinkValidationApi.openUrlLinkValidationMode()`. Existing installations are not affected until you add it.
+- **No new PostgreSQL database.** Shared **standalone** Redis (not Cluster). No token issued by Stripo.
+- Google Web Risk runs only when you set your own `web-risk.api-key`. Stripo does not issue this key for a self-hosted install. While the key is empty, dangerous links are reported as clean: the result looks the same as a link that passed the check, not as an unchecked one. URLs are not sent to Google.
+- Do **not** expose this service via Ingress or HTTPRoute.
+- Editor behavior, the `urlValidation` permission, and the JavaScript API are documented in [URL Checker](https://plugin.stripo.email/editor-configuration/url-checker).
+
+### Action Required
+
+**Nothing to do if you do not need the URL Checker, or if you run Stripo Editor V1 only.**
+
+To enable it, follow [Step 14: Configure URL Checker](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-14-configure-url-checker-for-v2-only) in the deployment manual. In short:
+
+1. **Update the Helm repository**:
+
+   ```shell
+   helm repo update stripo
+   ```
+
+2. **Configure** `charts/stripo-url-validator-service.yaml` — both Redis clients. Do not add a database. Set `web-risk.api-key` only if you have your own Google Web Risk key. Without a key, dangerous links are reported as clean. Example file is in this repo. Restrict ingress to the api-gateway if the cluster enforces NetworkPolicy (Step 14).
+3. **Deploy the service.** It is listed in the updated `resources/helm/manage_charts.sh` but commented out by default. Uncomment `"stripo-url-validator-service"` after the values from item 2 are set.
+4. **Point the api-gateway at it.** Add the property below to `charts/stripo-plugin-api-gateway.yaml`, then upgrade the gateway:
+
+   ```properties
+   service.urlvalidator.url=http://stripo-url-validator-service:8080
+   ```
+
+   > This step is easy to miss: the property defaults to an empty value, so both pods run and look healthy while the server check fails.
+5. **Open the mode from the host application** with `urlLinkValidationApi.openUrlLinkValidationMode()` — only after this service is deployed. There is no initialization flag. See [URL Checker](https://plugin.stripo.email/editor-configuration/url-checker).
+
 ## Update as of September 18, 2026
 
 Applies from **Stripo Plugin V2 release 2.78.0**.
