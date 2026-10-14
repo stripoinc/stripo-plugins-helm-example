@@ -95,10 +95,10 @@ services=(
 
   #---------------------------------------------------
   # Uncomment after following README Step 14 (URL Checker / V2 only).
-  # Optional: the editor works without it. Set SWAGGER_PASSWORD and
-  # RATE_LIMIT_INNER_SECRET (any non-empty value) and both Redis clients
-  # in charts/stripo-url-validator-service.yaml before uncommenting.
-  # No database. No Stripo-issued token. Chart 1.0.1 or newer.
+  # Optional: the editor works without it. Set RATE_LIMIT_INNER_SECRET
+  # (any non-empty value) and both Redis clients in
+  # charts/stripo-url-validator-service.yaml before uncommenting.
+  # No database. No Stripo-issued token.
   #"stripo-url-validator-service"
   #---------------------------------------------------
 

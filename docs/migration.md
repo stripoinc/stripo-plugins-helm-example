@@ -9,7 +9,6 @@ Applies from **Stripo Plugin V2 release 2.81.0**.
 ### Key Changes
 
 - Added **stripo-url-validator-service** — URL Checker for Editor V2. The host application opens a mode that sends links and image URLs from the email to this service. Available in **Stripo Editor V2 only**. Optional.
-- Helm chart **1.0.1** sets `service.mode=plugin`.
 - The feature has **no effect** until the service is deployed, the api-gateway has `service.urlvalidator.url`, and the host application calls `urlLinkValidationApi.openUrlLinkValidationMode()`. Existing installations are not affected until you add it.
 - **No new PostgreSQL database.** Shared **standalone** Redis (not Cluster). No token issued by Stripo.
 - Google Web Risk runs only when you set your own `web-risk.api-key`. Stripo does not issue this key for a self-hosted install. While the key is empty, that check stays off and URLs are not sent to Google.
@@ -22,13 +21,13 @@ Applies from **Stripo Plugin V2 release 2.81.0**.
 
 To enable it, follow [Step 14: Configure URL Checker](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-14-configure-url-checker-for-v2-only) in the deployment manual. In short:
 
-1. **Update the Helm repository** — chart `1.0.1` is required (`service.mode=plugin`):
+1. **Update the Helm repository**:
 
    ```shell
    helm repo update stripo
    ```
 
-2. **Configure** `charts/stripo-url-validator-service.yaml` — both Redis clients, `SWAGGER_PASSWORD`, and `RATE_LIMIT_INNER_SECRET` (any non-empty value). Do not add a database. Set `web-risk.api-key` only if you have your own Google Web Risk key. Example file is in this repo.
+2. **Configure** `charts/stripo-url-validator-service.yaml` — both Redis clients and `RATE_LIMIT_INNER_SECRET` (any non-empty value). Do not add a database. Set `web-risk.api-key` only if you have your own Google Web Risk key. Example file is in this repo.
 3. **Deploy the service.** It is listed in the updated `resources/helm/manage_charts.sh` but commented out by default. Uncomment `"stripo-url-validator-service"` after the values from item 2 are set.
 4. **Point the api-gateway at it.** Add the property below to `charts/stripo-plugin-api-gateway.yaml`, then upgrade the gateway:
 

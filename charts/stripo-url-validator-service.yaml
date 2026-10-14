@@ -9,8 +9,7 @@ settings:
 env:
   - name: JAVA_TOOL_OPTIONS
     value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
-  # Required at startup even in plugin mode. Any non-empty value.
-  # Not used for the link check. Do not leave them empty.
+  # Required at startup. Any non-empty value. Not used for the link check.
   - name: SWAGGER_PASSWORD
     value: change-me
   - name: RATE_LIMIT_INNER_SECRET
@@ -27,7 +26,6 @@ httproute:
 configmap:
   enabled: true
   extraScrapeConfigs:
-    # service.mode=plugin is already the chart 1.0.1 default (base.properties).
     application.properties: |
       logging.level.root=INFO
       # Standalone Redis (not Cluster). Same instance as the other charts.

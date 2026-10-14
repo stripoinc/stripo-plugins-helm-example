@@ -1288,18 +1288,14 @@ It is listed in `./resources/helm/manage_charts.sh` but **commented out by defau
 
 Do **not** expose this service on Ingress or HTTPRoute. In plugin mode it permits all requests and trusts the api-gateway, so it must stay reachable only inside the cluster.
 
-Chart **1.0.1** (or newer) is required: it sets `service.mode=plugin` in `base.properties`. Do not put that key in `application.properties` unless you need to override it.
-
 #### Configure the URL Validator Service
 
-Set Redis and the two startup values in `charts/stripo-url-validator-service.yaml`.
+Set Redis in `charts/stripo-url-validator-service.yaml`.
 
 ```yaml
 env:
   - name: JAVA_TOOL_OPTIONS
     value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
-  - name: SWAGGER_PASSWORD
-    value: change-me
   - name: RATE_LIMIT_INNER_SECRET
     value: change-me
 
@@ -1319,7 +1315,6 @@ configmap:
 
 | Property | Description |
 | --- | --- |
-| `SWAGGER_PASSWORD` | Any non-empty value. The process does not start without it. Swagger UI stays off. |
 | `RATE_LIMIT_INNER_SECRET` | Any non-empty value. The process does not start without it. The account rate-limit filter is not used in plugin mode. |
 | `redisson.cache.url` | Standalone Redis for the check cache (`redis://redis:6379` in this repo). Not Redis Cluster. |
 | `redisson.ratelimits.url` | Same Redis. The plugin install does not apply account rate limits, but the process still connects to this client. Use the same password as `redisson.cache`. |
