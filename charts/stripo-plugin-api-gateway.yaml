@@ -55,6 +55,7 @@ configmap:
       service.calendarlink.url=http://stripo-calendar-link-service:8080
       service.video.url=http://stripo-video-processing-service:8080
       service.urlvalidator.url=http://stripo-url-validator-service:8080
+      service.videometadata.url=http://stripo-video-metadata-service:8080
       rate.limit.enabled=false
       redisson.url=redis://redis:6379
       redisson.password=test

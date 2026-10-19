@@ -1,0 +1,56 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+# Live-plugins: request 750Mi / 50m, limit 1300Mi / 1 CPU.
+# The Java heap stays -Xmx512m. The pod limit is not a bigger heap.
+resources:
+  limits:
+    memory: 1300Mi
+    cpu: 1000m
+  requests:
+    memory: 750Mi
+    cpu: 50m
+
+# In case of autoscaling is disabled
+#replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+settings:
+  profile: PLUGINS
+
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
+
+# Do not expose this service via Ingress or HTTPRoute. In plugin mode it
+# permits all requests and trusts the api-gateway in front of it.
+ingress:
+  enabled: false
+
+httproute:
+  enabled: false
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      # Standalone Redis (not Cluster). Same instance as the other charts.
+      # Both clients are probed at startup; set the same URL and password on each.
+      redisson.cache.url=redis://redis:6379
+      redisson.cache.password=test
+      redisson.cache.authorized=true
+      redisson.ratelimits.url=redis://redis:6379
+      redisson.ratelimits.password=test
+      redisson.ratelimits.authorized=true
+      # Required. The customer's own YouTube Data API key.
+      # While this is empty the pod does not become ready.
+      video-metadata.youtube.api-key=
