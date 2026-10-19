@@ -2,6 +2,39 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of October 19, 2026
+
+Applies from **Stripo Plugin V2 release 2.82.1**. There is no separate initialization flag.
+
+### Key Changes
+
+- Added **stripo-video-metadata-service**. The editor asks it for the thumbnail and the title of a video link. **Stripo Editor V2 only.** Required for the Video block. This is not Play-in-email (`stripo-video-processing-service`).
+- Without this service, entering a video link shows **Video not found** and the link is not saved. Pictures already stored in existing emails stay as they are.
+- The customer's own YouTube Data API key is required (`video-metadata.youtube.api-key`). Stripo does not supply a shared key for a self-hosted install. While the key is empty the pod does not become ready.
+- **No new PostgreSQL database.** Shared **standalone** Redis (not Cluster). The process connects to both the cache client and the rate-limit client.
+- Do **not** expose this service via Ingress or HTTPRoute.
+- The api-gateway image in release **2.82.1** contains the video-metadata route. Release **2.82.0** already lists `stripo-video-metadata-service`, but its api-gateway image does not forward the request. On 2.82.0 a new video link shows **Video not found**. Upgrade to **2.82.1** (or newer). Do not stay on 2.82.0.
+
+### Action Required
+
+Follow [Step 15: Configure Video link previews](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-15-configure-video-link-previews-for-v2-only). In short:
+
+1. **Update the Helm repository** — chart `stripo-video-metadata-service` **1.0.0**:
+
+   ```shell
+   helm repo update stripo
+   ```
+2. **Set your YouTube Data API key** in `charts/stripo-video-metadata-service.yaml` (`video-metadata.youtube.api-key`). Set both Redis clients to your Redis. Do not add a database.
+3. **Uncomment** `"stripo-video-metadata-service"` in `resources/helm/manage_charts.sh` and deploy. The line stays commented in this repo so an empty key does not stop the rest of the install.
+4. **Point the api-gateway at it** and set both image tags from release **2.82.1** or newer (`stripo-plugin-api-gateway` and `stripo-video-metadata-service`). If you already installed **2.82.0**, upgrade to **2.82.1**. The 2.82.0 gateway image does not contain this route.
+
+   ```properties
+   service.videometadata.url=http://stripo-video-metadata-service:8080
+   ```
+
+   > Easy to miss: the 2.82.0 gateway ignores this property. The pods look healthy and a new video link still shows **Video not found**.
+5. Restrict ingress to the api-gateway if the cluster enforces NetworkPolicy (Step 15).
+
 ## Update as of October 12, 2026
 
 Applies from **Stripo Plugin V2 release 2.81.0**.

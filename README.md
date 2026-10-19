@@ -57,6 +57,9 @@
      - [Configure the URL Validator Service](#configure-the-url-validator-service)
      - [Route the API Gateway for the URL Checker](#route-the-api-gateway-for-the-url-checker)
      - [Open URL Checker in the Editor](#open-url-checker-in-the-editor)
+   - [Step 15: Configure Video link previews (for V2 only)](#step-15-configure-video-link-previews-for-v2-only)
+     - [Configure the Video Metadata Service](#configure-the-video-metadata-service)
+     - [Route the API Gateway for Video link previews](#route-the-api-gateway-for-video-link-previews)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -89,7 +92,7 @@ The Stripo ecosystem consists of several key components, each playing a crucial 
 
 ## Microservices Architecture Overview
 
-The Plugin infrastructure is composed of 22 microservices, each containerized using Docker. These Docker images are hosted in Stripo's Docker Hub repository. Enterprise plan partners are granted read-only access to this repository, allowing them to download the required images with specific versions when they choose to host the Plugin Backend on their own servers.
+The Plugin infrastructure is composed of 26 microservices, each containerized using Docker. These Docker images are hosted in Stripo's Docker Hub repository. Enterprise plan partners are granted read-only access to this repository, allowing them to download the required images with specific versions when they choose to host the Plugin Backend on their own servers.
 
 ### Microservice Dependencies
 
@@ -130,6 +133,7 @@ The table below outlines the current microservices, their roles, and their requi
 | **stripo-calendar-link-service**        | Generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks. | false        | false           | true            |
 | **stripo-video-processing-service**     | Optional. Play-in-email for the Video block: upload an MP4; the editor generates a poster and an animated GIF (play-button overlay) as fallback. | false        | false           | false           |
 | **stripo-url-validator-service**        | Optional. URL Checker for Editor V2: checks links and image URLs from the email (HTTP status, redirects, shorteners, slow pages, and Google Web Risk when the customer sets a key). | false        | false           | false           |
+| **stripo-video-metadata-service**       | Required for Editor V2. Resolves a thumbnail and a title for a video link (YouTube, Vimeo, TikTok, Loom, and others). The Video block does not save a new link without it. | false        | false           | true            |
 
 ### Notes:
 
@@ -1373,6 +1377,85 @@ The control that opens the mode is part of the host application, not of the plug
 Deploy this service and set `service.urlvalidator.url` before users open the mode. Without the service, local checks still run and the server check fails.
 
 See [URL Checker](https://plugin.stripo.email/editor-configuration/url-checker).
+
+### Step 15: Configure Video link previews (for V2 only)
+
+The Video block in **Stripo Editor V2** asks `stripo-video-metadata-service` for the thumbnail and the title of a video link (YouTube, Vimeo, TikTok, Loom, and others). This service is **required**, from plugin release **2.82.1**. It is not Play-in-email. Play-in-email is the separate, optional `stripo-video-processing-service` (Step 13).
+
+Release **2.82.0** already lists this service, but its api-gateway image does not contain the route. If you installed 2.82.0, upgrade to **2.82.1** before turning the service on. On 2.82.0 a new video link shows **Video not found**.
+
+Without this service, entering a video link shows **Video not found** and the link is not written into the email. Pictures already saved in existing emails stay as they are.
+
+The service needs **no PostgreSQL database** and **no token issued by Stripo**. It uses the same standalone Redis as the rest of the stack (not Redis Cluster). It does need **your own YouTube Data API key**. While that key is empty the pod does not become ready, and the editor shows the same **Video not found** message.
+
+It is listed in `./resources/helm/manage_charts.sh` but **commented out by default**. Set the key first, then uncomment `"stripo-video-metadata-service"`. An empty key keeps the pod unready, and `rollout status` would stop the rest of the script. Then run the script as in [Step 8](#step-8-deploy-microservices).
+
+Do **not** expose this service on Ingress or HTTPRoute. In plugin mode it permits all requests and trusts the api-gateway, so it must stay reachable only inside the cluster.
+
+If the cluster enforces NetworkPolicy, allow ingress only from the api-gateway. A cluster that does not enforce NetworkPolicy ignores this object.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: stripo-video-metadata-service
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: stripo-video-metadata-service
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: stripo-plugin-api-gateway
+      ports:
+        - port: 8080
+```
+
+#### Configure the Video Metadata Service
+
+Set Redis and your YouTube Data API key in `charts/stripo-video-metadata-service.yaml`.
+
+```yaml
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      redisson.cache.url=redis://redis:6379
+      redisson.cache.password=test
+      redisson.cache.authorized=true
+      redisson.ratelimits.url=redis://redis:6379
+      redisson.ratelimits.password=test
+      redisson.ratelimits.authorized=true
+      video-metadata.youtube.api-key=
+```
+
+| Property | Description |
+| --- | --- |
+| `redisson.cache.url` | Standalone Redis for the thumbnail cache (`redis://redis:6379` in this repo). Not Redis Cluster. |
+| `redisson.ratelimits.url` | Same Redis. The plugin install does not apply account rate limits, but the process still connects to this client. Use the same password as `redisson.cache`. |
+| `redisson.*.password` / `redisson.*.authorized` | Match your Redis. The example values use the same `test` password as the other charts. |
+| `video-metadata.youtube.api-key` | Required. Your own YouTube Data API key. While it is empty the pod does not become ready, and a new video link shows **Video not found**. Stripo does not supply this key for a self-hosted install. |
+
+Requests 750Mi and 50m CPU, limits 1300Mi and 1 CPU. The Java heap stays `-Xmx512m`. Autoscaling in this chart is off (1 pod). The service listens on port `8080` and exposes health probes on `8081`.
+
+#### Route the API Gateway for Video link previews
+
+Add one property to the `configmap` section of `charts/stripo-plugin-api-gateway.yaml`. Set the image tags of `stripo-plugin-api-gateway` and `stripo-video-metadata-service` from release **2.82.1** or newer, then upgrade the gateway:
+
+```properties
+service.videometadata.url=http://stripo-video-metadata-service:8080
+```
+
+The public path is `/api/v1/video-metadata/api/**`. The gateway image in **2.82.1** includes that route. The gateway image in **2.82.0** does not, so it ignores this property. Both pods can look healthy while a new video link still shows **Video not found**.
+
+There is no editor initialization flag for this service. After the pod is ready and the gateway routes to it, the Video block uses it for every new video link.
 
 ## Testing
 

@@ -102,6 +102,18 @@ services=(
   #---------------------------------------------------
 
   #---------------------------------------------------
+  # Required for the Video block in Stripo Editor V2, from release 2.82.1
+  # (README Step 15). Not the same service as stripo-video-processing-service.
+  # Release 2.82.0 lists this service, but its api-gateway image has no route.
+  # Upgrade to 2.82.1 before uncommenting.
+  # Uncomment after you set your own YouTube Data API key in
+  # charts/stripo-video-metadata-service.yaml (video-metadata.youtube.api-key).
+  # An empty key keeps the pod unready, and rollout status stops the script.
+  # No database.
+  #"stripo-video-metadata-service"
+  #---------------------------------------------------
+
+  #---------------------------------------------------
   # Comment to run ONLY Stripo editor V2 microservices
   "stripo-plugin-drafts-service"
   "patches-service"
