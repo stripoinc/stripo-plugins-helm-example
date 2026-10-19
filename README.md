@@ -53,6 +53,10 @@
      - [Configure the Video Processing Service](#configure-the-video-processing-service)
      - [Route the API Gateway for Video Processing](#route-the-api-gateway-for-video-processing)
      - [Enable Play-in-email in the Editor](#enable-play-in-email-in-the-editor)
+   - [Step 14: Configure URL Checker (for V2 only)](#step-14-configure-url-checker-for-v2-only)
+     - [Configure the URL Validator Service](#configure-the-url-validator-service)
+     - [Route the API Gateway for the URL Checker](#route-the-api-gateway-for-the-url-checker)
+     - [Open URL Checker in the Editor](#open-url-checker-in-the-editor)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -124,7 +128,8 @@ The table below outlines the current microservices, their roles, and their requi
 | **ui-editor-widgets-registry-service**  | Stores AI widget definitions and syncs the shared widget catalog from Stripo.                          | false        | false           | true            |
 | **convo-core-chat-server**              | Runs the AI conversation that generates and edits widget content.                                      | false        | false           | true            |
 | **stripo-calendar-link-service**        | Generates "Add to calendar" links (Google Calendar, Outlook, Apple/ICS, Yahoo) for date-related blocks. | false        | false           | true            |
-| **stripo-video-processing-service**     | Optional. Play-in-email for the Video block: upload an MP4; the editor generates a poster and an animated GIF (play-button overlay) as fallback. | false        | false           | true            |
+| **stripo-video-processing-service**     | Optional. Play-in-email for the Video block: upload an MP4; the editor generates a poster and an animated GIF (play-button overlay) as fallback. | false        | false           | false           |
+| **stripo-url-validator-service**        | Optional. URL Checker for Editor V2: checks links and image URLs from the email (HTTP status, redirects, shorteners, slow pages, and Google Web Risk when the customer sets a key). | false        | false           | false           |
 
 ### Notes:
 
@@ -1272,6 +1277,102 @@ nginx.ingress.kubernetes.io/proxy-body-size: 201m
 After the service is running and the gateway has `service.video.url`, pass `playInEmailEnabled: true` in the editor initialization settings. Do **not** set this flag before the microservice is deployed — the editor will offer Play-in-email and the requests will fail.
 
 See [Initialization Settings](https://plugin.stripo.email/editor-configuration/initialization-settings) (`playInEmailEnabled`).
+
+### Step 14: Configure URL Checker (for V2 only)
+
+URL Checker lets the host application open a validation mode that collects links and image URLs from the email and asks `stripo-url-validator-service` whether each one opens, redirects, uses `http://`, is shortened, or is slow. **Stripo Editor V2 only**, from plugin release **2.81.0**. Optional — the editor works without this service. What the mode does in the editor is described in [URL Checker](https://plugin.stripo.email/editor-configuration/url-checker).
+
+`stripo-url-validator-service` is the backend for the server check. It needs **no PostgreSQL database** and **no token issued by Stripo**. It uses the same standalone Redis as the rest of the stack (not Redis Cluster).
+
+It is listed in `./resources/helm/manage_charts.sh` but **commented out by default**. Uncomment `"stripo-url-validator-service"` in the `services` array after completing this step, then run the script as in [Step 8](#step-8-deploy-microservices).
+
+Do **not** expose this service on Ingress or HTTPRoute. In plugin mode it permits all requests and trusts the api-gateway, so it must stay reachable only inside the cluster. Any pod in the cluster could otherwise call it and ask it to open arbitrary URLs.
+
+If the cluster enforces NetworkPolicy, allow ingress only from the api-gateway:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: stripo-url-validator-service
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: stripo-url-validator-service
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: stripo-plugin-api-gateway
+      ports:
+        - port: 8080
+```
+
+#### Configure the URL Validator Service
+
+Set Redis in `charts/stripo-url-validator-service.yaml`.
+
+```yaml
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      redisson.cache.url=redis://redis:6379
+      redisson.cache.password=test
+      redisson.cache.authorized=true
+      redisson.ratelimits.url=redis://redis:6379
+      redisson.ratelimits.password=test
+      redisson.ratelimits.authorized=true
+      # web-risk.api-key=
+```
+
+| Property | Description |
+| --- | --- |
+| `redisson.cache.url` | Standalone Redis for the check cache (`redis://redis:6379` in this repo). Not Redis Cluster. |
+| `redisson.ratelimits.url` | Same Redis. The plugin install does not apply account rate limits, but the process still connects to this client. Use the same password as `redisson.cache`. |
+| `redisson.*.password` / `redisson.*.authorized` | Match your Redis. The example values use the same `test` password as the other charts. |
+| `web-risk.api-key` | Optional. The customer's own Google Web Risk key. While it is empty, dangerous links are reported as clean: the result looks the same as a link that passed the check, not as an unchecked one. URLs are not sent to Google. Stripo does not issue this key for a self-hosted install. |
+
+The service listens on port `8080` and exposes health probes on `8081`, like the other Java microservices.
+
+After the pod is up, check it from inside the cluster:
+
+```shell
+kubectl -n <namespace> port-forward deploy/stripo-url-validator-service 8080:8080
+curl -s localhost:8080/version
+```
+
+#### Route the API Gateway for the URL Checker
+
+Add one property to the `configmap` section of `charts/stripo-plugin-api-gateway.yaml` and upgrade the gateway:
+
+```properties
+service.urlvalidator.url=http://stripo-url-validator-service:8080
+```
+
+> Easy to miss: `service.urlvalidator.url` defaults to empty, so both pods look healthy while the server check fails. The editor then keeps its local checks and reports that the server check did not complete.
+
+#### Open URL Checker in the Editor
+
+There is no initialization flag for this feature. The host application opens the mode:
+
+```js
+window.StripoEditorApi.urlLinkValidationApi.openUrlLinkValidationMode();
+```
+
+The control that opens the mode is part of the host application, not of the plugin UI. The results panel is part of the editor.
+
+`urlValidation.read` allows opening the mode. `urlValidation.write` allows editing a link from the results. If no permissions checker is configured, both default to true. If a permissions checker is configured and the response has no `urlValidation` key, the mode does not open.
+
+Deploy this service and set `service.urlvalidator.url` before users open the mode. Without the service, local checks still run and the server check fails.
+
+See [URL Checker](https://plugin.stripo.email/editor-configuration/url-checker).
 
 ## Testing
 

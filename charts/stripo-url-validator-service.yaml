@@ -1,0 +1,36 @@
+image:
+  pullPolicy: IfNotPresent
+  # Overrides the image tag with the latest release tag value
+  tag: "latest"
+
+settings:
+  profile: PLUGINS
+
+env:
+  - name: JAVA_TOOL_OPTIONS
+    value: -Xss256k -Xms128m -Xmx512m -XX:ReservedCodeCacheSize=128M -Djava.net.preferIPv4Stack=true
+
+# Do not expose this service via Ingress or HTTPRoute. In plugin mode it
+# permits all requests and trusts the api-gateway in front of it.
+ingress:
+  enabled: false
+
+httproute:
+  enabled: false
+
+configmap:
+  enabled: true
+  extraScrapeConfigs:
+    application.properties: |
+      logging.level.root=INFO
+      # Standalone Redis (not Cluster). Same instance as the other charts.
+      # Both clients are probed at startup; set the same URL and password on each.
+      redisson.cache.url=redis://redis:6379
+      redisson.cache.password=test
+      redisson.cache.authorized=true
+      redisson.ratelimits.url=redis://redis:6379
+      redisson.ratelimits.password=test
+      redisson.ratelimits.authorized=true
+      # Without a key, dangerous links are reported as clean (same result as a
+      # passed check, not "unchecked"). URLs are not sent to Google.
+      # web-risk.api-key=
