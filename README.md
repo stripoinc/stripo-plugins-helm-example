@@ -1481,7 +1481,7 @@ Set the NATS connection in `charts/browser-pool-service.yaml`:
 | Property | Description |
 | --- | --- |
 | `settings.nats.url` / `user` / `password` | The same NATS servers and account as in `charts/merge-service.yaml`. |
-| `settings.nats.maxPayloadSizeToIncludeInMsg` | Keep `102400` (100 KiB). A response larger than this goes through the NATS object store, and `merge-service` reads it from there. The value must be greater than `0` and lower than the NATS server `max_payload` (see [Prerequisites](#prerequisites)). It does not have to match the `31457280` of `merge-service` and `coediting-core-service`. Requests from `merge-service` are sent inline and are limited by `max_payload`. |
+| `settings.nats.maxPayloadSizeToIncludeInMsg` | Keep `8388608` (8 MiB). A response larger than this goes through the NATS object store, and `merge-service` reads it from there; smaller responses are sent inline. The value must be greater than `0` and lower than the NATS server `max_payload` (see [Prerequisites](#prerequisites)). It does not have to match the `31457280` of `merge-service` and `coediting-core-service`. Requests from `merge-service` are sent inline and are limited by `max_payload`. |
 | `NATS_OBJECT_STORE_REPLICAS` | Replica count of the object store bucket that this service shares with `merge-service` and `coediting-core-service`. On start the service applies its own value to that bucket. The other two use `3` by default, so keep `3` here; the image default is `1`. |
 | `BROWSER_POOL_SIZE` | Chromium instances in one pod. The example resources (CPU limit 2, memory limit 2000Mi) and `goMaxProcs: "3"` match the value `3`. |
 

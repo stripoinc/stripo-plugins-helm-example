@@ -46,10 +46,11 @@ settings:
     url: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
     user: nats_user
     password: nats_password  # gitleaks:allow
-    # Responses larger than this (100 KiB) go through the NATS object store.
+    # Responses larger than this (8 MiB) go through the NATS object store,
+    # smaller ones are sent inline.
     # Must be greater than 0 and lower than the NATS server max_payload.
     # It does not have to match the value of merge-service.
-    maxPayloadSizeToIncludeInMsg: "102400"
+    maxPayloadSizeToIncludeInMsg: "8388608"
 #  logstash:
 #    host: logstash
 #    port: "5008"
