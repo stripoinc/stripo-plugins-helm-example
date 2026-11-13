@@ -1,0 +1,67 @@
+image:
+  repository: stripo/browser-pool-service
+  pullPolicy: IfNotPresent
+  # Override the image tag with the release tag value
+  tag: "latest"
+
+nameOverride: "browser-pool-service"
+
+# Rollout deadline. The image is larger than the other Go services, so the
+# first pull takes longer than the chart default of 60 seconds allows.
+DeadlineSeconds: 180
+
+# The Chromium pool needs more time to start than the other Go services.
+startupProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 2
+  failureThreshold: 45
+
+resources:
+  limits:
+    memory: 2000Mi
+    cpu: 2000m
+  requests:
+    memory: 1000Mi
+    cpu: 1000m
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: null
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+settings:
+  profile: PLUGINS
+  golang:
+    # Matches BROWSER_POOL_SIZE below
+    goMaxProcs: "3"
+    goMemLimit: 500MiB
+  nats:
+    # The same NATS servers and account as merge-service
+    url: "nats://example-nats-1.svc.stripo.email:4222, nats://example-nats-2.svc.stripo.email:4222, nats://example-nats-3.svc.stripo.email:4222"
+    user: nats_user
+    password: nats_password  # gitleaks:allow
+    # Responses larger than this (8 MiB) go through the NATS object store,
+    # smaller ones are sent inline.
+    # Must be greater than 0 and lower than the NATS server max_payload.
+    # It does not have to match the value of merge-service.
+    maxPayloadSizeToIncludeInMsg: "8388608"
+#  logstash:
+#    host: logstash
+#    port: "5008"
+
+env:
+  # Number of headless Chromium instances in one pod
+  - name: BROWSER_POOL_SIZE
+    value: "3"
+  # Replica count of the NATS object store bucket shared with merge-service
+  # and coediting-core-service. On start this service applies its own value
+  # to that bucket. The other two use 3 by default, so keep 3 here
+  # (the image default is 1).
+  - name: NATS_OBJECT_STORE_REPLICAS
+    value: "3"

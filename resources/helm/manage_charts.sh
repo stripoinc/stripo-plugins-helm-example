@@ -28,7 +28,7 @@ install_or_update() {
 
   # Define Helm chart path based on service type
   local helm_chart="stripo/$service_name"
-  [[ "$service_name" == "coediting-core-service" || "$service_name" == "env-adapter-service" || "$service_name" == "merge-service" ]] && helm_chart="stripo/go-template-service"
+  [[ "$service_name" == "coediting-core-service" || "$service_name" == "env-adapter-service" || "$service_name" == "merge-service" || "$service_name" == "browser-pool-service" ]] && helm_chart="stripo/go-template-service"
 
   # Install or upgrade the service
   if ! helm list --namespace="$NAMESPACE" | grep -q "$service_name"; then
@@ -111,6 +111,15 @@ services=(
   # An empty key keeps the pod unready, and rollout status stops the script.
   # No database.
   #"stripo-video-metadata-service"
+  #---------------------------------------------------
+
+  #---------------------------------------------------
+  # Uncomment after following README Step 16 (Browser Pool / V2 only),
+  # release 2.86.2 or newer. Optional: merge-service calls it only when
+  # BLOCKS_PATCH_PLUGINS_ENABLED=true. Deploy it before you set the flag.
+  # NATS only. No database, no Redis, no Stripo-issued token.
+  # charts/browser-pool-service.yaml
+  #"browser-pool-service"
   #---------------------------------------------------
 
   #---------------------------------------------------

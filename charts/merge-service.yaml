@@ -45,3 +45,6 @@ env:
   # max-old-space-size - depends on memory limit (~90%).
   - name: NODE_OPTIONS
     value: '--max-old-space-size=5400'
+  # Uncomment only after browser-pool-service is running (README Step 16).
+  # - name: BLOCKS_PATCH_PLUGINS_ENABLED
+  #   value: "true"

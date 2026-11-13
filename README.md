@@ -60,6 +60,9 @@
    - [Step 15: Configure Video link previews (for V2 only)](#step-15-configure-video-link-previews-for-v2-only)
      - [Configure the Video Metadata Service](#configure-the-video-metadata-service)
      - [Route the API Gateway for Video link previews](#route-the-api-gateway-for-video-link-previews)
+   - [Step 16: Configure Browser Pool (for V2 only)](#step-16-configure-browser-pool-for-v2-only)
+     - [Configure the Browser Pool Service](#configure-the-browser-pool-service)
+     - [Turn On Layout Measurements in merge-service](#turn-on-layout-measurements-in-merge-service)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -134,6 +137,7 @@ The table below outlines the current microservices, their roles, and their requi
 | **stripo-video-processing-service**     | Optional. Play-in-email for the Video block: upload an MP4; the editor generates a poster and an animated GIF (play-button overlay) as fallback. | false        | false           | false           |
 | **stripo-url-validator-service**        | Optional. URL Checker for Editor V2: checks links and image URLs from the email (HTTP status, redirects, shorteners, slow pages, and Google Web Risk when the customer sets a key). | false        | false           | false           |
 | **stripo-video-metadata-service**       | Required for Editor V2. Resolves a thumbnail and a title for a video link (YouTube, Vimeo, TikTok, Loom, and others). The Video block does not save a new link without it. | false        | false           | true            |
+| **browser-pool-service**                | Optional. Runs headless Chromium instances. merge-service uses them to measure the rendered layout of an email on the server when `BLOCKS_PATCH_PLUGINS_ENABLED=true`. | false        | false           | false           |
 
 ### Notes:
 
@@ -203,7 +207,7 @@ Additionally, these prerequisites must be met if you want to deploy Stripo V2 mi
 
   With a higher `max_payload`, `merge-service` may process larger patch payloads in memory — increase its `resources.limits.memory` / `resources.requests.memory` to **6000Mi** and scale `NODE_OPTIONS --max-old-space-size` accordingly (~90% of the memory limit, i.e. `5400`) in `./charts/merge-service.yaml` (see [Step 5](#step-5-update-helm-chart-configurations)).
 
-  In addition to `max_payload`, set `settings.nats.maxPayloadSizeToIncludeInMsg: "31457280"` (30 MiB) on **both** `merge-service` and `coediting-core-service` (see `./charts/merge-service.yaml` and `./charts/coediting-core-service.yaml`; rendered as the `NATS_MAX_PAYLOAD_SIZE_TO_INCLUDE_IN_MSG` environment variable). It enables offloading of messages larger than this size through Object Storage instead of sending them inline over NATS. The value must be identical on both services and slightly lower than the NATS `max_payload` (the 32 MiB / 30 MiB pair). This setting takes effect starting from the release that enables reading it from the environment; on earlier versions it is ignored and `merge-service` logs `object store is not configured, skipping initialization` at startup.
+  In addition to `max_payload`, set `settings.nats.maxPayloadSizeToIncludeInMsg: "31457280"` (30 MiB) on **both** `merge-service` and `coediting-core-service` (see `./charts/merge-service.yaml` and `./charts/coediting-core-service.yaml`; rendered as the `NATS_MAX_PAYLOAD_SIZE_TO_INCLUDE_IN_MSG` environment variable). It enables offloading of messages larger than this size through Object Storage instead of sending them inline over NATS. Each service uses its own threshold, so the values do not have to match, but we recommend the same value on both. Each one must be greater than `0` and lower than the NATS `max_payload` (the 32 MiB / 30 MiB pair), and both services must use the same object store bucket (they do by default). This setting takes effect starting from the release that enables reading it from the environment; on earlier versions it is ignored and `merge-service` logs `object store is not configured, skipping initialization` at startup.
 
   To keep large emails opening fast, also consider lowering `settings.numberOfPatchesToStartCompaction` on `coediting-core-service` (service default `100`, recommended `10`–`20`; rendered as the `NUMBER_OF_PATCHES_TO_START_COMPACTION` environment variable) — the number of accumulated patches that triggers server-side model compaction. A lower value means more frequent compaction and faster email opening. See the [Migration Guide](docs/migration.md#editor-performance-for-large-emails) for details.
 
@@ -1456,6 +1460,63 @@ service.videometadata.url=http://stripo-video-metadata-service:8080
 The public path is `/api/v1/video-metadata/api/**`. The gateway image in **2.82.1** includes that route. The gateway image in **2.82.0** does not, so it ignores this property. Both pods can look healthy while a new video link still shows **Video not found**.
 
 There is no editor initialization flag for this service. After the pod is ready and the gateway routes to it, the Video block uses it for every new video link.
+
+### Step 16: Configure Browser Pool (for V2 only)
+
+`browser-pool-service` runs a pool of headless Chromium instances. `merge-service` asks it to measure the rendered layout of an email on the server: a button for Outlook (VML), the height of a block after its content changed, the natural size of an image for responsive layout. **Stripo Editor V2 only.** Optional. Available from release **2.86.2**.
+
+`merge-service` calls it only when `BLOCKS_PATCH_PLUGINS_ENABLED=true`. The default is `false`, and with the default this service receives no requests. With the flag on, measurements are requested in two cases:
+
+- server-side application of [Template Themes](https://plugin.stripo.email/editor-configuration/template-themes) while HTML is generated;
+- some updates through `PUT /coediting/v1/email/document-state`, including emails without a theme.
+
+It needs **no PostgreSQL database**, **no Redis** and **no token**. It connects only to NATS, with the same account as `merge-service`. Do **not** expose it on Ingress or HTTPRoute: nothing calls it over HTTP.
+
+It is listed in `./resources/helm/manage_charts.sh` but **commented out by default**. The order matters: deploy the service first, and only then turn the flag on in `merge-service`.
+
+#### Configure the Browser Pool Service
+
+Set the NATS connection in `charts/browser-pool-service.yaml`:
+
+| Property | Description |
+| --- | --- |
+| `settings.nats.url` / `user` / `password` | The same NATS servers and account as in `charts/merge-service.yaml`. |
+| `settings.nats.maxPayloadSizeToIncludeInMsg` | Keep `8388608` (8 MiB). A response larger than this goes through the NATS object store, and `merge-service` reads it from there; smaller responses are sent inline. The value must be greater than `0` and lower than the NATS server `max_payload` (see [Prerequisites](#prerequisites)). It does not have to match the `31457280` of `merge-service` and `coediting-core-service`. Requests from `merge-service` are sent inline and are limited by `max_payload`. |
+| `NATS_OBJECT_STORE_REPLICAS` | Replica count of the object store bucket that this service shares with `merge-service` and `coediting-core-service`. On start the service applies its own value to that bucket. The other two use `3` by default, so keep `3` here; the image default is `1`. |
+| `BROWSER_POOL_SIZE` | Chromium instances in one pod. The example resources (CPU limit 2, memory limit 2000Mi) and `goMaxProcs: "3"` match the value `3`. |
+
+Keep `startupProbe` and `DeadlineSeconds: 180` as in the example. The Chromium pool needs more time to start than the other Go services, and the image is larger (about 350 MB compressed), so the first pull takes longer. With the chart default of 60 seconds, `kubectl rollout status` in `manage_charts.sh` can fail on the first install.
+
+Chromium writes its temporary files to the pod's `/tmp`, so leave free ephemeral storage on the node (an idle pod uses about 300 MiB).
+
+Then uncomment `"browser-pool-service"` in the `services` array of `./resources/helm/manage_charts.sh` and run the script as in [Step 8](#step-8-deploy-microservices). Wait until the `browser-pool-service` pods are ready.
+
+#### Turn On Layout Measurements in merge-service
+
+After the `browser-pool-service` pods are ready, uncomment the variable in the `env` list of `charts/merge-service.yaml` and run the script again to upgrade `merge-service`:
+
+```yaml
+env:
+  - name: NODE_OPTIONS
+    value: '--max-old-space-size=5400'
+  - name: BLOCKS_PATCH_PLUGINS_ENABLED
+    value: "true"
+```
+
+> Easy to miss: Helm replaces the whole `env` list. Keep `NODE_OPTIONS` in it.
+
+With the flag on and `browser-pool-service` unavailable:
+
+| Action | Result |
+| --- | --- |
+| Opening an email in the editor | Opens as usual. The editor applies the theme in the browser when needed. There is no message about the missing service. |
+| Export from the open editor (`compileEmail()`) | Works with the current state of the email and the theme shown in the editor. |
+| `GET /coediting/v1/email/html-css`, `GET /coediting/v1/email/compilation` | HTTP 500 without HTML when applying the theme needs measurements. The stored HTML is not returned as a fallback. A request that does not need measurements can still succeed. |
+| `PUT /coediting/v1/email/document-state` | An update that requires a browser measurement fails with HTTP 500 (`INTERNAL`) and nothing from the request is saved. An update that requires no measurement is saved, but the notification with the updated HTML/CSS is not sent when the bound theme cannot be applied. The rules are the same for emails with and without a theme. |
+
+If the service is running but a measurement times out, the result depends on the measurement. A timeout of an Outlook button or block-height measurement also fails the update with HTTP 500, and nothing is saved. If only an image-size measurement times out, the update can be saved without the adjustment that depends on that measurement.
+
+To turn the measurements off again, remove the variable (or set it to `"false"`) and upgrade `merge-service`. You can then remove `browser-pool-service`.
 
 ## Testing
 
