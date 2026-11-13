@@ -62,7 +62,7 @@
      - [Route the API Gateway for Video link previews](#route-the-api-gateway-for-video-link-previews)
    - [Step 16: Configure Browser Pool (for V2 only)](#step-16-configure-browser-pool-for-v2-only)
      - [Configure the Browser Pool Service](#configure-the-browser-pool-service)
-     - [Turn On Layout Measurements in merge-service](#turn-on-layout-measurements-in-merge-service)
+     - [Turn On Server-Side Adjustments in merge-service](#turn-on-server-side-adjustments-in-merge-service)
 6. [Testing](#testing)
    - [Stripo Editor V1](#stripo-editor-v1)
    - [Stripo Editor V2](#stripo-editor-v2)
@@ -1465,10 +1465,18 @@ There is no editor initialization flag for this service. After the pod is ready 
 
 `browser-pool-service` runs a pool of headless Chromium instances. `merge-service` asks it to measure the rendered layout of an email on the server: a button for Outlook (VML), the height of a block after its content changed, the natural size of an image for responsive layout. **Stripo Editor V2 only.** Optional. Available from release **2.86.2**.
 
-`merge-service` calls it only when `BLOCKS_PATCH_PLUGINS_ENABLED=true`. The default is `false`, and with the default this service receives no requests. With the flag on, measurements are requested in two cases:
+`BLOCKS_PATCH_PLUGINS_ENABLED` controls how `merge-service` processes changes that are made outside the editor UI: updates through `PUT /coediting/v1/email/document-state` and server-side application of [Template Themes](https://plugin.stripo.email/editor-configuration/template-themes).
 
-- server-side application of [Template Themes](https://plugin.stripo.email/editor-configuration/template-themes) while HTML is generated;
-- some updates through `PUT /coediting/v1/email/document-state`, including emails without a theme.
+- **Off (default).** Such changes are saved exactly as they arrive. The automatic adjustments that the editor normally makes after a user edit are not made on the server, and this service receives no requests.
+- **On.** `merge-service` makes the same automatic adjustments as the editor does in the browser, so a change made through the API ends up the same as the same change made by a user in the editor. Examples:
+  - responsive image settings for images wider than the mobile layout;
+  - Outlook-specific markup for buttons;
+  - block heights and module widths recalculated after the content changes;
+  - font links kept in sync with the fonts used in the email;
+  - cleanup of dark-mode styles that no longer apply to any element;
+  - repair of block settings after a block or module is inserted.
+
+Some of these adjustments need the email rendered in a real browser. `browser-pool-service` provides that, so deploy it before you turn the flag on.
 
 It needs **no PostgreSQL database**, **no Redis** and **no token**. It connects only to NATS, with the same account as `merge-service`. Do **not** expose it on Ingress or HTTPRoute: nothing calls it over HTTP.
 
@@ -1483,7 +1491,7 @@ Set the NATS connection in `charts/browser-pool-service.yaml`:
 | `settings.nats.url` / `user` / `password` | The same NATS servers and account as in `charts/merge-service.yaml`. |
 | `settings.nats.maxPayloadSizeToIncludeInMsg` | Keep `8388608` (8 MiB). A response larger than this goes through the NATS object store, and `merge-service` reads it from there; smaller responses are sent inline. The value must be greater than `0` and lower than the NATS server `max_payload` (see [Prerequisites](#prerequisites)). It does not have to match the `31457280` of `merge-service` and `coediting-core-service`. Requests from `merge-service` are sent inline and are limited by `max_payload`. |
 | `NATS_OBJECT_STORE_REPLICAS` | Replica count of the object store bucket that this service shares with `merge-service` and `coediting-core-service`. On start the service applies its own value to that bucket. The other two use `3` by default, so keep `3` here; the image default is `1`. |
-| `BROWSER_POOL_SIZE` | Chromium instances in one pod. The example resources (CPU limit 2, memory limit 2000Mi) and `goMaxProcs: "3"` match the value `3`. |
+| `BROWSER_POOL_SIZE` | Chromium instances in one pod. The example resources (CPU limit 2, memory limit 2000Mi) are sized for the value `3`. |
 
 Keep `startupProbe` and `DeadlineSeconds: 180` as in the example. The Chromium pool needs more time to start than the other Go services, and the image is larger (about 350 MB compressed), so the first pull takes longer. With the chart default of 60 seconds, `kubectl rollout status` in `manage_charts.sh` can fail on the first install.
 
@@ -1491,7 +1499,7 @@ Chromium writes its temporary files to the pod's `/tmp`, so leave free ephemeral
 
 Then uncomment `"browser-pool-service"` in the `services` array of `./resources/helm/manage_charts.sh` and run the script as in [Step 8](#step-8-deploy-microservices). Wait until the `browser-pool-service` pods are ready.
 
-#### Turn On Layout Measurements in merge-service
+#### Turn On Server-Side Adjustments in merge-service
 
 After the `browser-pool-service` pods are ready, uncomment the variable in the `env` list of `charts/merge-service.yaml` and run the script again to upgrade `merge-service`:
 
@@ -1516,7 +1524,7 @@ With the flag on and `browser-pool-service` unavailable:
 
 If the service is running but a measurement times out, the result depends on the measurement. A timeout of an Outlook button or block-height measurement also fails the update with HTTP 500, and nothing is saved. If only an image-size measurement times out, the update can be saved without the adjustment that depends on that measurement.
 
-To turn the measurements off again, remove the variable (or set it to `"false"`) and upgrade `merge-service`. You can then remove `browser-pool-service`.
+To turn the server-side adjustments off again, remove the variable (or set it to `"false"`) and upgrade `merge-service`. This turns off all the adjustments listed above, not only those that use `browser-pool-service`: changes made through the API are again saved as they arrive. You can then remove `browser-pool-service`.
 
 ## Testing
 
