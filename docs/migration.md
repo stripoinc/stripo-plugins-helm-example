@@ -2,6 +2,27 @@
 
 This document is designed to assist you in migrating your Stripo environment to the latest release version.
 
+## Update as of November 13, 2026
+
+Applies from **Stripo Plugin V2 release 2.86.2**.
+
+### Key Changes
+
+- Added **browser-pool-service**: a pool of headless Chromium instances that `merge-service` uses to measure the rendered layout of an email on the server (Outlook buttons, block heights, natural image sizes). **Stripo Editor V2 only.** Optional.
+- `merge-service` calls it only when `BLOCKS_PATCH_PLUGINS_ENABLED=true`. The default is `false`. With the flag on, it is used for server-side application of Template Themes and for some updates through `PUT /coediting/v1/email/document-state`.
+- **No PostgreSQL database, no Redis, no token.** NATS only, with the same account as `merge-service`.
+- Do **not** expose this service via Ingress or HTTPRoute.
+
+### Action Required
+
+Nothing, if you keep `BLOCKS_PATCH_PLUGINS_ENABLED` at its default (`false`).
+
+To turn the measurements on, follow [Step 16: Configure Browser Pool](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-16-configure-browser-pool-for-v2-only). In short:
+
+1. Set the image tag of `browser-pool-service` from release **2.86.2** or newer, and the NATS connection, in `charts/browser-pool-service.yaml`.
+2. Uncomment `"browser-pool-service"` in `resources/helm/manage_charts.sh` and deploy. Wait until its pods are ready.
+3. Only then set `BLOCKS_PATCH_PLUGINS_ENABLED=true` in the `env` list of `charts/merge-service.yaml` (keep `NODE_OPTIONS` in the list) and run the script again to upgrade `merge-service`.
+
 ## Update as of October 19, 2026
 
 Applies from **Stripo Plugin V2 release 2.82.1**. There is no separate initialization flag.
@@ -439,7 +460,7 @@ SET version = 19,
 Large emails with many accumulated (non-compacted) patches open slowly and, in the worst case, hit the NATS message size limit: `merge-service` successfully merges the patches, but its reply is too large to deliver, `coediting-core-service` waits for a 10-minute timeout, and the email keeps opening slowly with patches accumulating further. Three settings work together to prevent this:
 
 1. **NATS `max_payload` = 32 MiB** — already covered in the deployment manual, see [Prerequisites → NATS](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#prerequisites). Remember to restart or reconnect `merge-service` and `coediting-core-service` after changing it: NATS clients cache the limit from the connection handshake.
-2. **`settings.nats.maxPayloadSizeToIncludeInMsg: "31457280"`** (30 MiB) — enables offloading of oversized NATS messages through Object Storage instead of sending them inline. Set it on **both** `merge-service` **and** `coediting-core-service` (`charts/merge-service.yaml` and `charts/coediting-core-service.yaml`) with the **same value** (a mismatch between the two services will cause message-processing failures). The value must be slightly lower than the NATS `max_payload` (the 32 MiB / 30 MiB pair above). Rendered as the `NATS_MAX_PAYLOAD_SIZE_TO_INCLUDE_IN_MSG` environment variable; requires chart version 1.3.1+.
+2. **`settings.nats.maxPayloadSizeToIncludeInMsg: "31457280"`** (30 MiB) — enables offloading of oversized NATS messages through Object Storage instead of sending them inline. Set it on **both** `merge-service` **and** `coediting-core-service` (`charts/merge-service.yaml` and `charts/coediting-core-service.yaml`). Each service uses its own threshold, so the values do not have to match, but we recommend the same value on both. Each one must be greater than `0` and lower than the NATS `max_payload` (the 32 MiB / 30 MiB pair above), and both services must use the same object store bucket (they do by default). Rendered as the `NATS_MAX_PAYLOAD_SIZE_TO_INCLUDE_IN_MSG` environment variable; requires chart version 1.3.1+.
 3. **`settings.numberOfPatchesToStartCompaction`** — a `coediting-core-service` setting (`charts/coediting-core-service.yaml`) that controls how many accumulated patches trigger server-side model compaction. The service default is `100`, which lets emails accumulate hundreds of non-compacted patches and makes them open for tens of seconds. Recommended value: **20** — a lower value means more frequent compaction and faster email opening. Rendered as the `NUMBER_OF_PATCHES_TO_START_COMPACTION` environment variable; requires chart version 1.3.1+.
 
 **If problematic emails already exist** (patches accumulated while the NATS limit was being hit): temporarily increase `merge-service` memory resources, open each affected email to trigger compaction (opening an email is also a compaction trigger; re-check after ~15 minutes), then scale the resources back down.
