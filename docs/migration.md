@@ -9,7 +9,7 @@ Applies from **Stripo Plugin V2 release 2.86.2**.
 ### Key Changes
 
 - Added **browser-pool-service**: a pool of headless Chromium instances that `merge-service` uses to measure the rendered layout of an email on the server (Outlook buttons, block heights, natural image sizes). **Stripo Editor V2 only.** Optional.
-- `merge-service` calls it only when `BLOCKS_PATCH_PLUGINS_ENABLED=true`. The default is `false`. With the flag on, it is used for server-side application of Template Themes and for some updates through `PUT /coediting/v1/email/document-state`.
+- New flag `BLOCKS_PATCH_PLUGINS_ENABLED` on `merge-service` (default `false`). When it is on, changes made through `PUT /coediting/v1/email/document-state` and server-side application of Template Themes get the same automatic adjustments as edits in the editor (responsive images, Outlook buttons, block heights, font links, and others). Some adjustments need `browser-pool-service`.
 - **No PostgreSQL database, no Redis, no token.** NATS only, with the same account as `merge-service`.
 - Do **not** expose this service via Ingress or HTTPRoute.
 
@@ -17,7 +17,7 @@ Applies from **Stripo Plugin V2 release 2.86.2**.
 
 Nothing, if you keep `BLOCKS_PATCH_PLUGINS_ENABLED` at its default (`false`).
 
-To turn the measurements on, follow [Step 16: Configure Browser Pool](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-16-configure-browser-pool-for-v2-only). In short:
+To turn the flag on, follow [Step 16: Configure Browser Pool](https://github.com/stripoinc/stripo-plugins-helm-example/blob/main/README.md#step-16-configure-browser-pool-for-v2-only). In short:
 
 1. Set the image tag of `browser-pool-service` from release **2.86.2** or newer, and the NATS connection, in `charts/browser-pool-service.yaml`.
 2. Uncomment `"browser-pool-service"` in `resources/helm/manage_charts.sh` and deploy. Wait until its pods are ready.

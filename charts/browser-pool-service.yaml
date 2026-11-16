@@ -38,7 +38,6 @@ pdb:
 settings:
   profile: PLUGINS
   golang:
-    # Matches BROWSER_POOL_SIZE below
     goMaxProcs: "3"
     goMemLimit: 500MiB
   nats:
